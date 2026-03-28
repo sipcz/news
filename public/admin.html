@@ -39,6 +39,20 @@
         .logo-text { font-weight: 900; letter-spacing: 1px; }
         .logo-text span { color: var(--ua-blue); }
 
+        .nav-actions { display: flex; align-items: center; gap: 15px; }
+
+        .btn-home {
+            text-decoration: none;
+            font-size: 13px;
+            color: var(--ua-blue);
+            font-weight: bold;
+            padding: 8px 15px;
+            border: 1px solid var(--ua-blue);
+            border-radius: 8px;
+            transition: 0.2s;
+        }
+        .btn-home:hover { background: var(--ua-blue); color: #fff; }
+
         .container { max-width: 900px; margin: 30px auto; padding: 0 15px; }
 
         /* Картки */
@@ -51,11 +65,10 @@
             margin-bottom: 30px;
         }
 
-        #loginBox { max-width: 400px; margin-top: 100px; text-align: center; }
+        #loginBox { max-width: 400px; margin: 100px auto; text-align: center; }
 
         h2, h3 { margin-top: 0; color: var(--ua-blue); text-transform: uppercase; font-size: 1.2rem; }
 
-        /* Поля */
         input, select, textarea {
             width: 100%;
             padding: 12px;
@@ -67,7 +80,6 @@
         }
         textarea { height: 150px; resize: vertical; }
 
-        /* Стилізація вибору файлу */
         .file-upload {
             background: #f8f9fa;
             border: 2px dashed var(--border);
@@ -77,17 +89,8 @@
             margin: 10px 0;
             cursor: pointer;
         }
-        .file-upload:hover { border-color: var(--ua-blue); }
-        #imagePreview { 
-            width: 100%; 
-            max-height: 200px; 
-            object-fit: contain; 
-            margin-top: 10px; 
-            display: none; 
-            border-radius: 6px;
-        }
+        #imagePreview { width: 100%; max-height: 200px; object-fit: contain; margin-top: 10px; display: none; border-radius: 6px; }
 
-        /* Кнопки */
         .btn {
             background: var(--de-black);
             color: var(--ua-yellow);
@@ -101,35 +104,23 @@
             transition: 0.2s;
         }
         .btn:hover { background: var(--ua-blue); color: #fff; }
-        .btn-logout { background: #f1f1f1; color: #555; width: auto; padding: 8px 15px; font-size: 12px; }
+        .btn-logout { background: #f1f1f1; color: #555; width: auto; padding: 8px 15px; font-size: 12px; border: none; border-radius: 8px; cursor: pointer; }
 
-        /* Сітка керування */
-        .news-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-            gap: 20px;
-        }
-        .news-item {
-            background: #fff;
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 12px;
-            text-align: center;
-            transition: 0.2s;
-        }
+        .news-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
+        .news-item { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 12px; text-align: center; }
         .news-item img { width: 100%; height: 120px; object-fit: cover; border-radius: 6px; }
         .news-item h4 { font-size: 0.9rem; margin: 10px 0; height: 2.4em; overflow: hidden; }
+        
         .del-btn {
             background: #ff4d4d;
             color: white;
             border: none;
-            padding: 6px 12px;
+            padding: 8px;
             border-radius: 6px;
             cursor: pointer;
             font-size: 11px;
             width: 100%;
         }
-        .del-btn:hover { background: #cc0000; }
 
         #adminPanel { display: none; }
     </style>
@@ -138,7 +129,10 @@
 
     <nav>
         <div class="logo-text"><span>ADMIN</span> LIVE ДРЕЗДЕН</div>
-        <button class="btn btn-logout" id="logoutBtn" style="display:none" onclick="location.reload()">Вийти</button>
+        <div class="nav-actions">
+            <a href="/" class="btn-home">На головну</a>
+            <button class="btn-logout" id="logoutBtn" style="display:none" onclick="location.reload()">Вийти</button>
+        </div>
     </nav>
 
     <div class="container">
@@ -150,10 +144,8 @@
 
         <div id="adminPanel">
             <div class="card">
-                <h3>Створити нову публікацію</h3>
-                
+                <h3>Створити публікацію</h3>
                 <input type="text" id="newsTitle" placeholder="Заголовок новини">
-                
                 <select id="newsCategory">
                     <option value="Дрезден">Дрезден</option>
                     <option value="Україна">Україна</option>
@@ -162,26 +154,24 @@
                 </select>
 
                 <div class="file-upload" onclick="document.getElementById('newsImageInput').click()">
-                    <span id="uploadText">Натисніть, щоб вибрати фото</span>
+                    <span id="uploadText">Виберіть фото</span>
                     <input type="file" id="newsImageInput" accept="image/*" style="display:none" onchange="previewImage(event)">
                     <img id="imagePreview" src="">
                 </div>
 
                 <textarea id="newsContent" placeholder="Текст новини..."></textarea>
-                
-                <button class="btn" id="addBtn" onclick="addNews()">Опублікувати на сайті</button>
+                <button class="btn" id="addBtn" onclick="addNews()">Опублікувати</button>
             </div>
 
-            <h3>Архів публікацій</h3>
-            <div class="news-grid" id="adminNewsList">
-                </div>
+            <h3>Архів</h3>
+            <div class="news-grid" id="adminNewsList"></div>
         </div>
     </div>
 
     <script>
         let CURRENT_PASS = "";
+        let failedAttempts = 0;
 
-        // 1. ПЕРЕГЛЯД ФОТО ПЕРЕД ВІДПРАВКОЮ
         function previewImage(event) {
             const reader = new FileReader();
             reader.onload = function() {
@@ -193,9 +183,11 @@
             if(event.target.files[0]) reader.readAsDataURL(event.target.files[0]);
         }
 
-        // 2. ВХІД
         async function login() {
-            const pass = document.getElementById("adminPass").value;
+            const passInput = document.getElementById("adminPass");
+            const pass = passInput.value;
+            const loginBox = document.getElementById("loginBox");
+
             try {
                 const res = await fetch('/api/admin/login', {
                     method: 'POST',
@@ -205,28 +197,31 @@
 
                 if (res.ok) {
                     CURRENT_PASS = pass;
-                    document.getElementById("loginBox").style.display = "none";
+                    loginBox.style.display = "none";
                     document.getElementById("adminPanel").style.display = "block";
                     document.getElementById("logoutBtn").style.display = "block";
                     renderNews();
+                } else if (res.status === 403) {
+                    loginBox.innerHTML = `<h2 style="color:#ff4d4d">IP ЗАБЛОКОВАНО</h2><p>Ваш доступ обмежено на 1 годину.</p>`;
                 } else {
-                    alert("Невірний пароль!");
+                    failedAttempts++;
+                    if (failedAttempts >= 5) {
+                        loginBox.innerHTML = `<h2 style="color:#ff4d4d">СИСТЕМА ЗАБЛОКОВАНА</h2><p>Забагато помилок. Вікно входу видалено.</p>`;
+                    } else {
+                        alert(`Невірний пароль! Залишилося спроб: ${5 - failedAttempts}`);
+                        passInput.value = "";
+                    }
                 }
             } catch (e) { alert("Сервер недоступний"); }
         }
 
-        // 3. ДОДАТИ НОВИНУ (З ФОТО)
         async function addNews() {
             const title = document.getElementById("newsTitle").value;
             const category = document.getElementById("newsCategory").value;
             const content = document.getElementById("newsContent").value;
             const imageFile = document.getElementById("newsImageInput").files[0];
 
-            if (!title || !content) return alert("Заповніть назву та текст!");
-
-            const btn = document.getElementById("addBtn");
-            btn.innerText = "Завантаження...";
-            btn.disabled = true;
+            if (!title || !content) return alert("Заповніть поля!");
 
             const formData = new FormData();
             formData.append("pass", CURRENT_PASS);
@@ -236,53 +231,33 @@
             if (imageFile) formData.append("image", imageFile);
 
             try {
-                const res = await fetch('/api/news/add', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                if (res.ok) {
-                    alert("Готово! Новина на сайті.");
-                    location.reload();
-                } else {
-                    alert("Помилка збереження");
-                }
-            } catch (err) {
-                alert("Помилка з'єднання");
-            } finally {
-                btn.innerText = "Опублікувати";
-                btn.disabled = false;
-            }
+                const res = await fetch('/api/news/add', { method: 'POST', body: formData });
+                if (res.ok) { alert("Опубліковано!"); location.reload(); }
+                else alert("Помилка збереження");
+            } catch (err) { alert("Помилка з'єднання"); }
         }
 
-        // 4. СПИСОК НОВИН
         async function renderNews() {
             const list = document.getElementById("adminNewsList");
-            try {
-                const res = await fetch('/api/news');
-                const news = await res.json();
-                
-                list.innerHTML = news.map(n => `
-                    <div class="news-item">
-                        <img src="${n.img || 'https://via.placeholder.com/150'}" alt="img">
-                        <h4>${n.title}</h4>
-                        <button class="del-btn" onclick="deleteNews('${n.id}')">Видалити</button>
-                    </div>
-                `).join('');
-            } catch (e) { list.innerHTML = "Помилка завантаження архіву"; }
+            const res = await fetch('/api/news');
+            const news = await res.json();
+            list.innerHTML = news.map(n => `
+                <div class="news-item">
+                    <img src="${n.img || ''}" alt="img">
+                    <h4>${n.title}</h4>
+                    <button class="del-btn" onclick="deleteNews('${n.id}')">Видалити</button>
+                </div>
+            `).join('');
         }
 
-        // 5. ВИДАЛИТИ
         async function deleteNews(id) {
-            if (!confirm("Видалити цю статтю назавжди?")) return;
-            try {
-                const res = await fetch('/api/news/delete', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ pass: CURRENT_PASS, id: id })
-                });
-                if (res.ok) renderNews();
-            } catch (e) { alert("Не вдалося видалити"); }
+            if (!confirm("Видалити статтю?")) return;
+            const res = await fetch('/api/news/delete', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ pass: CURRENT_PASS, id: id })
+            });
+            if (res.ok) renderNews();
         }
     </script>
 </body>
