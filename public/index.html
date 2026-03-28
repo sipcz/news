@@ -6,12 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         :root {
-            /* Палітра UA-DE */
             --ua-blue: #0057b7;
             --ua-yellow: #ffd700;
             --de-red: #d00000;
             --de-black: #222;
-            --soft-bg: #f4f7f9; /* М'який фон, що не втомлює очі */
+            --soft-bg: #f4f7f9;
             --card-bg: #ffffff;
             --text-dark: #1a1a1a;
             --border: #d1d9e0;
@@ -22,91 +21,57 @@
             margin: 0;
             background: var(--soft-bg);
             color: var(--text-dark);
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            line-height: 1.6;
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.5;
         }
 
-        /* ВЕРХНЯ ПАНЕЛЬ (NAV) */
+        /* НАВІГАЦІЯ */
         nav {
             background: #fff;
-            /* Подвійна лінія: зверху синя, знизу жовта */
             border-top: 4px solid var(--ua-blue);
             border-bottom: 3px solid var(--ua-yellow);
-            padding: 12px 5%;
+            padding: 10px 5%;
             display: flex;
             justify-content: space-between;
             align-items: center;
             position: sticky;
             top: 0;
             z-index: 1000;
-            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
         }
 
-        .nav-left { display: flex; align-items: center; gap: 25px; }
-
-        .logo {
-            font-size: 1.5rem;
-            font-weight: 900;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-        }
+        .nav-left { display: flex; align-items: center; gap: 20px; }
+        .logo { font-size: 1.4rem; font-weight: 900; text-decoration: none; display: flex; align-items: center; }
         .logo .live { color: var(--ua-blue); text-transform: uppercase; }
-        .logo .city { color: var(--de-black); margin-left: 5px; font-weight: 400; }
+        .logo .city { color: var(--de-black); margin-left: 4px; font-weight: 400; }
 
-        .currency-bar {
-            font-size: 0.9rem;
-            color: #444;
-            padding: 4px 12px;
-            background: #f0f4f8;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .currency-bar b { color: var(--ua-blue); }
+        .currency-bar { font-size: 0.85rem; color: #444; padding: 4px 10px; background: #f0f4f8; border-radius: 6px; }
 
         .btn-contact {
             background: var(--de-black);
             color: var(--ua-yellow);
             border: 2px solid var(--ua-yellow);
-            padding: 10px 18px;
+            padding: 8px 15px;
             border-radius: 8px;
             font-weight: bold;
             cursor: pointer;
+            font-size: 0.75rem;
             text-transform: uppercase;
-            font-size: 0.8rem;
             transition: 0.3s;
         }
-        .btn-contact:hover {
-            background: var(--ua-blue);
-            color: #fff;
-            border-color: var(--ua-blue);
-        }
+        .btn-contact:hover { background: var(--ua-blue); color: #fff; border-color: var(--ua-blue); }
 
         /* КОНТЕНТ */
-        .container { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
+        .container { max-width: 1200px; margin: 25px auto; padding: 0 15px; }
         
-        .section-header {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 25px;
-        }
-        .section-header h2 {
-            margin: 0;
-            font-size: 1.3rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--ua-blue);
-        }
+        .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+        .section-header h2 { margin: 0; font-size: 1.1rem; text-transform: uppercase; color: var(--ua-blue); letter-spacing: 0.5px; }
         .line { flex-grow: 1; height: 1px; background: var(--border); }
 
-        /* СІТКА НОВИН */
         .news-grid {
             display: grid;
-            grid-template-columns: 2.5fr 1fr;
-            gap: 30px;
+            grid-template-columns: 2.8fr 1.2fr;
+            gap: 25px;
         }
 
         @media (max-width: 900px) {
@@ -114,86 +79,78 @@
             .currency-bar { display: none; }
         }
 
+        /* МЕНША ТА КОМПАКТНІША СІТКА */
         .main-feed {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 25px;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 20px;
         }
 
-        /* КАРТКА */
+        /* КАРТКА (БЕЗ ВІДСТУПІВ ЯКЩО НЕМАЄ ФОТО) */
         .news-card {
             background: var(--card-bg);
-            border-radius: 12px;
+            border-radius: 10px;
             border: 1px solid var(--border);
             overflow: hidden;
             transition: 0.3s;
             cursor: pointer;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
         }
-        .news-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.08); border-color: var(--ua-blue); }
-        .news-card img { width: 100%; height: 180px; object-fit: cover; }
-        .news-content { padding: 18px; flex-grow: 1; }
-        .news-tag { color: var(--de-red); font-weight: bold; font-size: 0.7rem; text-transform: uppercase; margin-bottom: 8px; display: block; }
-        .news-card h3 { margin: 0 0 12px 0; font-size: 1.15rem; line-height: 1.4; color: var(--de-black); }
-        .news-meta { font-size: 0.8rem; color: #666; display: flex; align-items: center; gap: 10px; }
+        .news-card:hover { transform: translateY(-3px); box-shadow: 0 8px 15px rgba(0,0,0,0.06); border-color: var(--ua-blue); }
+        
+        /* Зменшена висота фото */
+        .news-card img { width: 100%; height: 150px; object-fit: cover; border-bottom: 1px solid #eee; }
+        
+        .news-content { padding: 14px; flex-grow: 1; }
+        .news-tag { color: var(--de-red); font-weight: 700; font-size: 0.65rem; text-transform: uppercase; margin-bottom: 6px; display: block; }
+        .news-card h3 { margin: 0 0 10px 0; font-size: 1.05rem; line-height: 1.3; color: var(--de-black); }
+        .news-meta { font-size: 0.75rem; color: #777; display: flex; align-items: center; gap: 8px; }
 
         .live-indicator {
-            padding: 2px 6px;
+            padding: 1px 5px;
             background: var(--ua-blue);
             color: #fff;
-            border-radius: 4px;
-            font-size: 0.65rem;
+            border-radius: 3px;
+            font-size: 0.6rem;
             font-weight: bold;
             animation: pulse 2s infinite;
         }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
 
         /* SIDEBAR */
-        .sidebar { background: #fff; border-radius: 12px; border: 1px solid var(--border); padding: 20px; }
-        .sidebar-item { border-bottom: 1px solid #eee; padding: 12px 0; cursor: pointer; transition: 0.2s; }
-        .sidebar-item:last-child { border-bottom: none; }
-        .sidebar-item:hover { padding-left: 5px; color: var(--ua-blue); }
-        .sidebar-item small { color: var(--ua-blue); font-weight: bold; }
-        .sidebar-item div { font-size: 0.95rem; font-weight: 500; margin-top: 4px; line-height: 1.3; }
+        .sidebar { background: #fff; border-radius: 10px; border: 1px solid var(--border); padding: 15px; }
+        .sidebar-item { border-bottom: 1px solid #f1f1f1; padding: 10px 0; cursor: pointer; transition: 0.2s; }
+        .sidebar-item:hover { color: var(--ua-blue); padding-left: 3px; }
+        .sidebar-item small { color: var(--ua-blue); font-weight: bold; font-size: 0.75rem; }
+        .sidebar-item div { font-size: 0.9rem; font-weight: 500; margin-top: 3px; line-height: 1.2; }
 
-        /* МОДАЛЬНІ ВІКНА */
+        /* МОДАЛКА */
         .modal {
             display: none;
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 23, 42, 0.8);
+            background: rgba(0,0,0,0.7);
             z-index: 2000;
-            backdrop-filter: blur(4px);
-            padding: 20px;
+            backdrop-filter: blur(3px);
+            padding: 15px;
         }
         .modal-content {
             background: #fff;
-            max-width: 550px;
-            margin: 40px auto;
-            border-radius: 16px;
-            padding: 35px;
+            max-width: 600px;
+            margin: 30px auto;
+            border-radius: 12px;
+            padding: 25px;
             position: relative;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            max-height: 90vh;
+            overflow-y: auto;
         }
-        .close-btn { position: absolute; right: 20px; top: 15px; font-size: 28px; cursor: pointer; color: #94a3b8; }
+        .close-btn { position: absolute; right: 15px; top: 10px; font-size: 24px; cursor: pointer; color: #888; }
 
-        /* ФОРМА (ОКРЕМЕ ПОЛЕ) */
-        .form-group { margin-bottom: 18px; }
-        .form-group label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.9rem; color: #334155; }
-        .form-group input, .form-group textarea { 
-            width: 100%; padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-family: inherit; font-size: 1rem;
-        }
-        .form-group input:focus { outline: none; border-color: var(--ua-blue); }
-        
-        .btn-send { 
-            background: var(--ua-blue); color: #fff; width: 100%; padding: 14px; border: none; border-radius: 10px; 
-            font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 1rem; transition: 0.3s;
-        }
-        .btn-send:hover { background: var(--de-black); }
+        .btn-send { background: var(--ua-blue); color: #fff; width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
 
-        footer { text-align: center; padding: 40px; font-size: 0.85rem; color: #64748b; border-top: 1px solid var(--border); margin-top: 50px; }
+        footer { text-align: center; padding: 30px; font-size: 0.8rem; color: #888; }
     </style>
 </head>
 <body>
@@ -201,9 +158,9 @@
 <nav>
     <div class="nav-left">
         <a href="/" class="logo"><span class="live">LIVE</span><span class="city">Дрезден</span></a>
-        <div class="currency-bar" id="currency">Завантаження курсу...</div>
+        <div class="currency-bar" id="currency">Курс...</div>
     </div>
-    <button class="btn-contact" onclick="toggleModal('contactModal', true)">Написати нам</button>
+    <button class="btn-contact" onclick="toggleModal('contactModal', true)">Написати</button>
 </nav>
 
 <div class="container">
@@ -213,8 +170,7 @@
                 <h2>Свіжі новини</h2>
                 <div class="line"></div>
             </div>
-            <div class="main-feed" id="newsGrid">
-                </div>
+            <div class="main-feed" id="newsGrid"></div>
         </main>
 
         <aside>
@@ -222,70 +178,53 @@
                 <h2>Важливо</h2>
                 <div class="line"></div>
             </div>
-            <div class="sidebar" id="urgentFeed">
-                </div>
+            <div class="sidebar" id="urgentFeed"></div>
         </aside>
     </div>
 </div>
 
 <div id="newsModal" class="modal" onclick="closeByOutside(event)">
-    <div class="modal-content" style="max-width: 750px;">
+    <div class="modal-content">
         <span class="close-btn" onclick="toggleModal('newsModal', false)">&times;</span>
-        <img id="mImg" style="width:100%; border-radius:12px; margin-bottom:20px;">
-        <h2 id="mTitle" style="margin:0 0 15px 0; font-size: 1.6rem; color: var(--de-black);"></h2>
-        <div id="mDate" style="color:#64748b; font-size:0.9rem; margin-bottom:20px; border-bottom: 1px solid #eee; padding-bottom: 10px;"></div>
-        <div id="mText" style="white-space: pre-wrap; line-height:1.7; font-size: 1.1rem; color: #334155;"></div>
+        <img id="mImg" style="width:100%; border-radius:8px; margin-bottom:15px; display:none;">
+        <h2 id="mTitle" style="margin:0 0 10px 0; font-size: 1.4rem;"></h2>
+        <div id="mDate" style="color:#888; font-size:0.85rem; margin-bottom:15px; padding-bottom:10px; border-bottom:1px solid #eee;"></div>
+        <div id="mText" style="white-space: pre-wrap; line-height:1.6; font-size: 1rem; color: #333;"></div>
     </div>
 </div>
 
 <div id="contactModal" class="modal" onclick="closeByOutside(event)">
-    <div class="modal-content">
+    <div class="modal-content" style="max-width: 450px;">
         <span class="close-btn" onclick="toggleModal('contactModal', false)">&times;</span>
-        <h3 style="margin:0 0 10px 0; color:var(--ua-blue); font-size: 1.5rem;">Напишіть нам</h3>
-        <p style="font-size:0.9rem; color:#64748b; margin-bottom:25px;">Ми завжди відкриті до ваших пропозицій та новин.</p>
-        
+        <h3 style="margin:0 0 10px 0; color:var(--ua-blue);">Напишіть нам</h3>
         <form id="contactForm">
             <input type="text" name="hp_name" style="display:none">
-            <div class="form-group">
-                <label>Ваше ім'я</label>
-                <input type="text" name="userName" required placeholder="Як вас звати?">
-            </div>
-            <div class="form-group">
-                <label>Контакт (Тел або Email)</label>
-                <input type="text" name="userContact" required placeholder="+49... / email@example.com">
-            </div>
-            <div class="form-group">
-                <label>Повідомлення</label>
-                <textarea name="message" rows="4" required placeholder="Ваш текст..."></textarea>
-            </div>
+            <input type="text" name="userName" required placeholder="Ваше ім'я" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ddd; border-radius:6px;">
+            <input type="text" name="userContact" required placeholder="Телефон або Email" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ddd; border-radius:6px;">
+            <textarea name="message" rows="4" required placeholder="Ваше повідомлення..." style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ddd; border-radius:6px; font-family:inherit;"></textarea>
             
-            <div style="margin-bottom:20px; font-size:0.9rem; text-align:center; background: #f8fafc; padding: 10px; border-radius: 8px;">
-                Код захисту: <span id="captcha-code" style="font-weight:bold; color:var(--ua-blue); letter-spacing: 3px;"></span>
-                <input type="text" name="captcha" placeholder="Код" style="width:80px; margin-left:15px; padding: 6px; border: 1px solid #cbd5e1;">
+            <div style="margin-bottom:15px; font-size:0.85rem; background:#f8fafc; padding:8px; border-radius:6px; text-align:center;">
+                Код: <span id="captcha-code" style="font-weight:bold; color:var(--ua-blue); letter-spacing:2px;"></span>
+                <input type="text" name="captcha" placeholder="Введіть" style="width:70px; margin-left:10px; padding:4px;">
             </div>
 
-            <button type="submit" class="btn-send">Надіслати повідомлення</button>
-            <p id="formStatus" style="text-align:center; font-size:0.9rem; margin-top:15px; font-weight: 600;"></p>
+            <button type="submit" class="btn-send">Надіслати</button>
+            <p id="formStatus" style="text-align:center; font-size:0.85rem; margin-top:10px;"></p>
         </form>
     </div>
 </div>
 
-<footer>&copy; 2026 НОВИНИ LIVE — Українсько-німецький інформаційний портал у Дрездені</footer>
+<footer>&copy; 2026 НОВИНИ LIVE — Дрезден</footer>
 
 <script>
-    // 1. КУРС ВАЛЮТ
     async function fetchCurrency() {
         try {
             const res = await fetch('https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?valcode=EUR&json');
             const data = await res.json();
-            const rate = data[0].rate.toFixed(2);
-            document.getElementById('currency').innerHTML = `Курс € EUR: <b>${rate} ₴</b>`;
-        } catch (e) {
-            document.getElementById('currency').style.display = 'none';
-        }
+            document.getElementById('currency').innerHTML = `€ EUR: <b>${data[0].rate.toFixed(2)} ₴</b>`;
+        } catch (e) { document.getElementById('currency').style.display = 'none'; }
     }
 
-    // 2. ЗАВАНТАЖЕННЯ НОВИН
     async function loadContent() {
         try {
             const res = await fetch('/api/news');
@@ -294,35 +233,41 @@
             const urgent = document.getElementById('urgentFeed');
 
             if (news.length === 0) {
-                grid.innerHTML = "<p>Поки що новин немає.</p>";
+                grid.innerHTML = "<p>Новин ще немає.</p>";
                 return;
             }
 
-            grid.innerHTML = news.map(n => `
-                <div class="news-card" onclick="openNews('${encodeURIComponent(JSON.stringify(n))}')">
-                    <img src="${n.img || 'https://via.placeholder.com/400x225'}" onerror="this.src='https://via.placeholder.com/400x225'">
-                    <div class="news-content">
-                        <span class="news-tag">${n.category || 'Дрезден'}</span>
-                        <h3>${n.title}</h3>
-                        <div class="news-meta">
-                            <span class="live-indicator">LIVE</span>
-                            ${n.date}
+            // УМОВНЕ ВІДОБРАЖЕННЯ КАРТИНОК
+            grid.innerHTML = news.map(n => {
+                // Перевіряємо чи є фото і чи воно не є стандартною заглушкою
+                const hasPhoto = n.img && n.img !== "assets/img/auto-news.jpg" && n.img !== "";
+                const imgHtml = hasPhoto ? `<img src="${n.img}" alt="img">` : "";
+
+                return `
+                    <div class="news-card" onclick="openNews('${encodeURIComponent(JSON.stringify(n))}')">
+                        ${imgHtml}
+                        <div class="news-content">
+                            <span class="news-tag">${n.category || 'Дрезден'}</span>
+                            <h3>${n.title}</h3>
+                            <div class="news-meta">
+                                <span class="live-indicator">LIVE</span>
+                                ${n.date}
+                            </div>
                         </div>
                     </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
 
-            urgent.innerHTML = news.slice(0, 6).map(n => `
+            urgent.innerHTML = news.slice(0, 8).map(n => `
                 <div class="sidebar-item" onclick="openNews('${encodeURIComponent(JSON.stringify(n))}')">
                     <small>${n.date.split(',')[1] || ''}</small>
                     <div>${n.title}</div>
                 </div>
             `).join('');
 
-        } catch (e) { console.error("API Error"); }
+        } catch (e) { console.error("Помилка завантаження"); }
     }
 
-    // 3. МОДАЛКИ
     function toggleModal(id, show) {
         const modal = document.getElementById(id);
         modal.style.display = show ? 'block' : 'none';
@@ -332,7 +277,16 @@
 
     function openNews(data) {
         const n = JSON.parse(decodeURIComponent(data));
-        document.getElementById('mImg').src = n.img || '';
+        const img = document.getElementById('mImg');
+        
+        // В модалці теж ховаємо картинку, якщо її немає
+        if (n.img && n.img !== "assets/img/auto-news.jpg") {
+            img.src = n.img;
+            img.style.display = 'block';
+        } else {
+            img.style.display = 'none';
+        }
+
         document.getElementById('mTitle').innerText = n.title;
         document.getElementById('mDate').innerText = n.date;
         document.getElementById('mText').innerText = n.content;
@@ -346,7 +300,6 @@
         }
     }
 
-    // 4. CAPTCHA
     let captcha = "";
     function genCaptcha() {
         captcha = Math.random().toString(36).substring(2, 6).toUpperCase();
@@ -360,14 +313,12 @@
         const data = Object.fromEntries(fd);
 
         if (data.captcha.toUpperCase() !== captcha) {
-            status.innerText = "Помилка: Код введено невірно!";
+            status.innerText = "Код невірний!";
             status.style.color = "red";
             return;
         }
 
-        status.style.color = "var(--ua-blue)";
         status.innerText = "Надсилання...";
-        
         const res = await fetch('/api/taxi', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -375,13 +326,9 @@
         });
 
         if (res.ok) {
-            status.innerText = "Успішно! Повідомлення надіслано.";
+            status.innerText = "Надіслано!";
             status.style.color = "green";
-            setTimeout(() => {
-                toggleModal('contactModal', false);
-                status.innerText = "";
-                e.target.reset();
-            }, 2500);
+            setTimeout(() => { toggleModal('contactModal', false); status.innerText = ""; e.target.reset(); }, 2000);
         }
     };
 
@@ -390,6 +337,5 @@
         loadContent();
     };
 </script>
-
 </body>
 </html>
