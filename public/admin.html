@@ -2,164 +2,149 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <title>Панель керування — Новини LIVE</title>
+    <title>Адмін-панель — Новини LIVE</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <style>
         :root {
-            --bg: #000;
-            --text: #fff;
-            --accent: #d4af37;
-            --card-bg: rgba(255, 255, 255, 0.07);
-            --input-bg: rgba(255, 255, 255, 0.1);
+            --ua-blue: #0057b7;
+            --ua-yellow: #ffd700;
+            --de-black: #1a1a1a;
+            --bg: #f4f7f9;
+            --card-bg: #ffffff;
+            --border: #d1d9e0;
         }
 
         body {
             margin: 0;
             background: var(--bg);
-            color: var(--text);
-            font-family: 'Segoe UI', Arial, sans-serif;
-            min-height: 100vh;
+            color: var(--de-black);
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            padding-bottom: 50px;
         }
 
-        /* Відео-фон */
-        .video-bg {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -1; overflow: hidden;
-        }
-        .video-bg video {
-            width: 100%; height: 100%;
-            object-fit: cover;
-            filter: brightness(0.3);
-        }
-
-        .container {
-            max-width: 900px;
-            margin: auto;
-            padding: 40px 20px;
+        /* Навігація в стилі UA-DE */
+        nav {
+            background: #fff;
+            border-top: 4px solid var(--ua-blue);
+            border-bottom: 2px solid var(--ua-yellow);
+            padding: 15px 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
         }
 
-        /* Логін-бокс */
+        .container { max-width: 800px; margin: auto; padding: 0 15px; }
+
+        /* Картка логіну */
         #loginBox {
-            max-width: 400px;
-            margin: 100px auto;
-            background: var(--card-bg);
-            backdrop-filter: blur(20px);
+            background: #fff;
             padding: 40px;
-            border-radius: 20px;
-            border: 1px solid var(--accent);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             text-align: center;
+            margin-top: 100px;
         }
 
-        /* Основна панель */
-        #adminPanel {
-            display: none;
-            background: var(--card-bg);
-            backdrop-filter: blur(20px);
-            padding: 30px;
-            border-radius: 25px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        h2 { color: var(--accent); text-transform: uppercase; letter-spacing: 2px; }
-
+        /* Поля вводу */
         input, select, textarea {
             width: 100%;
-            padding: 14px;
+            padding: 12px;
             margin: 10px 0;
-            background: var(--input-bg);
-            border: 1px solid rgba(255,255,255,0.1);
-            color: #fff;
-            border-radius: 10px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
             font-size: 16px;
+            background: #fff;
         }
 
-        textarea { height: 150px; resize: vertical; }
+        textarea { height: 120px; }
 
-        button {
-            width: 100%;
-            padding: 15px;
-            background: var(--accent);
+        /* Кнопки */
+        .btn {
+            background: var(--de-black);
+            color: var(--ua-yellow);
             border: none;
-            color: #000;
-            font-weight: bold;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: 0.3s;
-            text-transform: uppercase;
-        }
-
-        button:hover { transform: scale(1.02); box-shadow: 0 0 20px rgba(212, 175, 55, 0.4); }
-
-        .hp-field { display: none !important; } /* Пастка для ботів */
-
-        /* Список новин */
-        .news-list {
-            margin-top: 40px;
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 20px;
-        }
-
-        .news-item {
-            background: rgba(255,255,255,0.05);
             padding: 15px;
-            border-radius: 15px;
-            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            width: 100%;
+            transition: 0.3s;
+        }
+        .btn:hover { background: var(--ua-blue); color: #fff; }
+
+        .btn-logout { width: auto; padding: 8px 15px; background: #eee; color: #333; }
+
+        /* Список новин (компактний) */
+        .news-manage-list {
+            margin-top: 30px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
         }
 
-        .news-item img { width: 100%; height: 120px; object-fit: cover; border-radius: 8px; }
-        
+        .manage-item {
+            background: #fff;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+        .manage-item img { width: 100%; height: 100px; object-fit: cover; border-radius: 5px; }
+        .manage-item h4 { font-size: 14px; margin: 10px 0; height: 35px; overflow: hidden; }
+
         .del-btn {
-            background: #ff4444;
-            color: white;
-            padding: 8px;
-            margin-top: 10px;
+            background: #ff4d4d;
+            color: #fff;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
             font-size: 12px;
         }
+
+        #adminPanel { display: none; }
     </style>
 </head>
 <body>
 
-    <div class="video-bg">
-        <video autoplay muted loop playsinline>
-            <source src="assets/video/video.mp4" type="video/mp4">
-        </video>
-    </div>
+    <nav>
+        <b style="color:var(--ua-blue)">ADMIN <span style="color:var(--de-black)">LIVE</span></b>
+        <button class="btn btn-logout" id="logoutBtn" style="display:none" onclick="location.reload()">Вихід</button>
+    </nav>
 
     <div class="container">
         <div id="loginBox">
-            <h2>Вхід в Адмінку</h2>
-            <input type="password" id="adminPass" placeholder="Пароль адміністратора">
-            <button onclick="login()">Увійти</button>
+            <h2 style="margin-top:0">Вхід у систему</h2>
+            <input type="password" id="adminPass" placeholder="Пароль">
+            <button class="btn" onclick="login()">Увійти</button>
         </div>
 
         <div id="adminPanel">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h2>Керування новинами</h2>
-                <button onclick="location.reload()" style="width: auto; padding: 10px 20px;">Вихід</button>
-            </div>
-
-            <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 15px;">
-                <h3>Додати нову статтю</h3>
+            <div style="background: #fff; padding: 25px; border-radius: 15px; border: 1px solid var(--border);">
+                <h3 style="margin-top:0">Створити новину</h3>
                 
-                <input type="text" id="admin_bot_trap" class="hp-field" tabindex="-1" autocomplete="off">
-
-                <input type="text" id="newsTitle" placeholder="Заголовок новини">
+                <input type="text" id="newsTitle" placeholder="Заголовок">
+                
                 <select id="newsCategory">
-                    <option value="Події">Події</option>
-                    <option value="Технології">Технології</option>
-                    <option value="Авто">Авто</option>
                     <option value="Дрезден">Дрезден</option>
+                    <option value="Україна">Україна</option>
+                    <option value="Події">Події</option>
+                    <option value="Корисно">Корисно</option>
                 </select>
-                <input type="text" id="newsImg" placeholder="URL картинки (https://...)">
-                <textarea id="newsContent" placeholder="Повний текст новини..."></textarea>
+
+                <label style="font-size: 14px; color: #666;">Виберіть фото:</label>
+                <input type="file" id="newsImageInput" accept="image/*">
+
+                <textarea id="newsContent" placeholder="Текст статті..."></textarea>
                 
-                <button onclick="addNews()">Опублікувати новину</button>
+                <button class="btn" id="addBtn" onclick="addNews()">Опублікувати</button>
             </div>
 
-            <div class="news-list" id="adminNewsList">
+            <h3 style="margin-top:40px">Керування публікаціями</h3>
+            <div class="news-manage-list" id="adminNewsList">
                 </div>
         </div>
     </div>
@@ -169,100 +154,88 @@
 
         async function login() {
             const pass = document.getElementById("adminPass").value;
-            try {
-                const res = await fetch('/api/admin/login', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ pass })
-                });
+            const res = await fetch('/api/admin/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ pass })
+            });
 
-                if (res.ok) {
-                    CURRENT_PASS = pass;
-                    document.getElementById("loginBox").style.display = "none";
-                    document.getElementById("adminPanel").style.display = "block";
-                    renderNews();
-                } else {
-                    const data = await res.json();
-                    alert(data.error || "Помилка входу");
-                }
-            } catch (err) {
-                alert("Сервер не відповідає");
+            if (res.ok) {
+                CURRENT_PASS = pass;
+                document.getElementById("loginBox").style.display = "none";
+                document.getElementById("adminPanel").style.display = "block";
+                document.getElementById("logoutBtn").style.display = "block";
+                renderNews();
+            } else {
+                alert("Невірний пароль!");
             }
         }
 
+        // 🔥 ГОЛОВНА ФУНКЦІЯ З ФОТО
         async function addNews() {
-            // Перевірка пастки для ботів
-            if (document.getElementById("admin_bot_trap").value !== "") {
-                return; // Бот виявлений
+            const title = document.getElementById("newsTitle").value;
+            const category = document.getElementById("newsCategory").value;
+            const content = document.getElementById("newsContent").value;
+            const imageFile = document.getElementById("newsImageInput").files[0];
+
+            if (!title || !content) return alert("Заповніть заголовок та текст!");
+
+            const btn = document.getElementById("addBtn");
+            btn.innerText = "Завантаження...";
+            btn.disabled = true;
+
+            // Створюємо FormData (це дозволяє передати файл)
+            const formData = new FormData();
+            formData.append("pass", CURRENT_PASS);
+            formData.append("title", title);
+            formData.append("category", category);
+            formData.append("content", content);
+            if (imageFile) {
+                formData.append("image", imageFile);
             }
-
-            const article = {
-                title: document.getElementById("newsTitle").value,
-                category: document.getElementById("newsCategory").value,
-                img: document.getElementById("newsImg").value,
-                content: document.getElementById("newsContent").value
-            };
-
-            if (!article.title || !article.content) return alert("Заповніть заголовок та текст!");
 
             try {
                 const res = await fetch('/api/news/add', {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ pass: CURRENT_PASS, article })
+                    body: formData // ВАЖЛИВО: не ставимо headers Content-Type, браузер зробить це сам
                 });
 
                 if (res.ok) {
-                    alert("Новину додано!");
-                    // Очистка полів
-                    document.getElementById("newsTitle").value = "";
-                    document.getElementById("newsContent").value = "";
-                    renderNews();
+                    alert("Новину опубліковано!");
+                    location.reload();
                 } else {
-                    alert("Помилка при збереженні!");
+                    alert("Помилка при збереженні");
                 }
             } catch (err) {
-                alert("Помилка мережі");
+                alert("Сервер не відповідає");
+            } finally {
+                btn.innerText = "Опублікувати";
+                btn.disabled = false;
             }
         }
 
         async function renderNews() {
             const list = document.getElementById("adminNewsList");
-            try {
-                const res = await fetch('/api/news');
-                const news = await res.json();
-                
-                list.innerHTML = news.map(n => `
-                    <div class="news-item">
-                        <img src="${n.img || 'https://via.placeholder.com/150'}" alt="img">
-                        <div style="margin: 10px 0; font-weight: bold; font-size: 14px;">${n.title}</div>
-                        <div style="font-size: 12px; color: var(--accent);">${n.category}</div>
-                        <button class="del-btn" onclick="deleteNews('${n.id}')">Видалити</button>
-                    </div>
-                `).join('');
-            } catch (e) {
-                list.innerHTML = "Помилка завантаження списку";
-            }
+            const res = await fetch('/api/news');
+            const news = await res.json();
+            
+            list.innerHTML = news.map(n => `
+                <div class="manage-item">
+                    <img src="${n.img || 'https://via.placeholder.com/150'}" alt="img">
+                    <h4>${n.title}</h4>
+                    <button class="del-btn" onclick="deleteNews('${n.id}')">Видалити</button>
+                </div>
+            `).join('');
         }
 
         async function deleteNews(id) {
-            if (!confirm("Видалити цю новину?")) return;
-            
-            try {
-                const res = await fetch('/api/news/delete', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ pass: CURRENT_PASS, id: id })
-                });
-
-                if (res.ok) {
-                    renderNews();
-                } else {
-                    alert("Не вдалося видалити");
-                }
-            } catch (err) {
-                alert("Помилка з'єднання");
-            }
+            if (!confirm("Видалити?")) return;
+            const res = await fetch('/api/news/delete', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ pass: CURRENT_PASS, id: id })
+            });
+            if (res.ok) renderNews();
         }
     </script>
 </body>
