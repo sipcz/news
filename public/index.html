@@ -20,7 +20,6 @@
             background: var(--bg);
             color: var(--text);
             font-family: 'Segoe UI', Arial, sans-serif;
-            transition: 0.4s;
             overflow-x: hidden;
         }
 
@@ -33,30 +32,51 @@
         .video-bg video {
             width: 100%; height: 100%;
             object-fit: cover;
-            filter: brightness(0.35);
+            filter: brightness(0.3);
         }
 
-        /* Компактний Header */
+        /* Header */
         header {
-            padding: 40px 20px; /* Зменшено у 2 рази */
+            padding: 30px 20px;
             text-align: center;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
         header h1 {
-            font-size: 2.2rem; /* Було 3.5 */
+            font-size: 1.8rem;
             margin: 0;
-            letter-spacing: 4px;
             color: var(--accent);
             text-transform: uppercase;
+            letter-spacing: 3px;
         }
-        header p { font-size: 0.9rem; opacity: 0.8; margin-top: 5px; }
+
+        /* Кнопка виклику форми */
+        .contact-trigger {
+            margin-top: 15px;
+            background: transparent;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        .contact-trigger:hover {
+            background: var(--accent);
+            color: #000;
+        }
 
         /* Компактна сітка новин */
         .news-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); /* Більше карток в рядку */
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 20px;
-            padding: 20px 5%; /* Менші відступи по боках */
+            padding: 30px 5%;
         }
 
         .news-card {
@@ -68,73 +88,66 @@
             cursor: pointer;
             transition: 0.3s;
         }
-        .news-card:hover {
-            transform: translateY(-5px);
-            border-color: var(--accent);
-        }
-        .news-card img {
-            width: 100%;
-            height: 160px; /* Зменшено висоту фото */
-            object-fit: cover;
-        }
+        .news-card:hover { transform: translateY(-5px); border-color: var(--accent); }
+        .news-card img { width: 100%; height: 160px; object-fit: cover; }
         .news-info { padding: 15px; }
-        .news-tag { color: var(--accent); font-size: 10px; font-weight: bold; text-transform: uppercase; }
-        .news-title { font-size: 1.1rem; margin: 8px 0; line-height: 1.2; font-weight: 500; }
+        .news-title { font-size: 1.1rem; margin: 8px 0; font-weight: 500; line-height: 1.2; }
         .news-date { font-size: 0.8rem; color: #888; }
 
-        /* Компактне модальне вікно */
-        #newsModal {
+        /* СПІЛЬНИЙ СТИЛЬ ДЛЯ МОДАЛОК (Новини та Контакти) */
+        .modal {
             display: none;
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9);
-            z-index: 999;
+            background: rgba(0,0,0,0.92);
+            z-index: 1000;
             overflow-y: auto;
             padding: 20px 10px;
         }
         .modal-content { 
-            max-width: 600px; /* Було 800px */
+            max-width: 500px; /* Компактне окреме поле */
             margin: auto; 
             background: #111; 
-            padding: 25px; 
-            border-radius: 20px; 
+            padding: 30px; 
+            border-radius: 25px; 
             border: 1px solid var(--border);
+            position: relative;
+            box-shadow: 0 0 40px rgba(0,0,0,0.8);
         }
-        .close-btn { float: right; color: var(--accent); font-size: 30px; cursor: pointer; line-height: 1; }
+        .close-btn { 
+            position: absolute;
+            right: 20px; top: 15px;
+            color: var(--accent); 
+            font-size: 30px; 
+            cursor: pointer; 
+        }
 
-        /* Компактна форма */
-        .contact-section {
-            background: var(--card-bg);
-            margin: 30px 5%;
-            padding: 25px;
-            border-radius: 20px;
-            border: 1px solid var(--border);
-            backdrop-filter: blur(10px);
-        }
-        .contact-section h2 { font-size: 1.5rem; margin-top: 0; }
+        /* Форма всередині модалки */
         input, textarea {
             width: 100%;
             padding: 12px;
-            margin: 8px 0;
+            margin: 10px 0;
             background: rgba(255,255,255,0.05);
             border: 1px solid var(--border);
             color: #fff;
-            border-radius: 8px;
-            font-size: 0.9rem;
+            border-radius: 10px;
         }
-        .hp-field { display: none !important; position: absolute; left: -9999px; }
+        .hp-field { display: none !important; }
 
-        button {
+        .submit-btn {
             background: var(--accent);
             color: #000;
             border: none;
-            padding: 12px;
+            padding: 14px;
             font-weight: bold;
-            border-radius: 8px;
+            border-radius: 10px;
             cursor: pointer;
             width: 100%;
             font-size: 1rem;
+            margin-top: 10px;
         }
+
+        footer { text-align: center; padding: 40px; opacity: 0.5; font-size: 0.8rem; }
     </style>
 </head>
 <body>
@@ -147,70 +160,70 @@
 
     <header>
         <h1>Новини LIVE</h1>
-        <p>Оперативні події у Дрездені</p>
+        <button class="contact-trigger" onclick="openContact()">Написати нам</button>
     </header>
 
     <div class="news-grid" id="newsGrid">
         </div>
 
-    <div id="newsModal">
+    <div id="newsModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeNews()">&times;</span>
-            <img id="mImg" style="width:100%; border-radius:12px; margin-bottom:15px; max-height: 300px; object-fit: cover;">
-            <h2 id="mTitle" style="color:var(--accent); margin: 0 0 10px 0;"></h2>
-            <p id="mDate" style="color:#888; font-size: 0.8rem; margin-bottom: 15px;"></p>
+            <img id="mImg" style="width:100%; border-radius:12px; margin-bottom:15px; max-height: 250px; object-fit: cover;">
+            <h2 id="mTitle" style="color:var(--accent); margin-bottom:10px;"></h2>
             <div id="mText" style="line-height:1.6; font-size:1rem; white-space: pre-wrap;"></div>
         </div>
     </div>
 
-    <section class="contact-section">
-        <h2 style="text-align:center;">Зворотний зв'язок</h2>
-        <form id="contactForm">
-            <input type="text" name="hp_name" class="hp-field" tabindex="-1" autocomplete="off">
-            <input type="text" name="userName" placeholder="Ваше ім'я" required>
-            <input type="email" name="userEmail" placeholder="Ваш Email" required>
-            <textarea name="message" rows="3" placeholder="Повідомлення..."></textarea>
-            
-            <div style="margin:10px 0; font-size: 0.85rem; text-align:center;">
-                Код: <span id="bot-letters" style="color:var(--accent); font-weight:bold; letter-spacing:2px;"></span>
-                <input type="text" name="captcha" placeholder="Код" required style="width:80px; margin-left:10px; padding: 8px;">
-            </div>
-            
-            <button type="submit">Надіслати</button>
-            <p id="formStatus" style="text-align:center; margin-top:10px; font-size: 0.9rem;"></p>
-        </form>
-    </section>
+    <div id="contactModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeContact()">&times;</span>
+            <h2 style="text-align:center; color:var(--accent); margin-top:0;">Зворотний зв'язок</h2>
+            <form id="contactForm">
+                <input type="text" name="hp_name" class="hp-field" tabindex="-1">
+                <input type="text" name="userName" placeholder="Ваше ім'я" required>
+                <input type="email" name="userEmail" placeholder="Email або Телефон" required>
+                <textarea name="message" rows="4" placeholder="Повідомлення..." required></textarea>
+                
+                <div style="margin:10px 0; text-align:center; font-size: 0.9rem;">
+                    Код: <span id="bot-letters" style="color:var(--accent); font-weight:bold; letter-spacing:3px;"></span>
+                    <input type="text" name="captcha" placeholder="Введіть код" required style="width:100px; margin-left:10px; display:inline-block;">
+                </div>
+                
+                <button type="submit" class="submit-btn">Надіслати</button>
+                <p id="formStatus" style="text-align:center; margin-top:10px;"></p>
+            </form>
+        </div>
+    </div>
+
+    <footer>
+        &copy; 2026 Новини LIVE — Дрезден. Всі права захищені.
+    </footer>
 
     <script>
-        // JS залишається майже таким самим, але з LoadNews для компактності
+        // 1. ЗАВАНТАЖЕННЯ НОВИН
         async function loadNews() {
             const grid = document.getElementById('newsGrid');
-            grid.innerHTML = "<p style='grid-column: 1/-1; text-align:center;'>Завантаження...</p>";
             try {
                 const res = await fetch('/api/news');
                 const news = await res.json();
-                if (news.length === 0) {
-                    grid.innerHTML = "<p style='grid-column: 1/-1; text-align:center;'>Новин немає.</p>";
-                    return;
-                }
                 grid.innerHTML = news.map(n => `
                     <div class="news-card" onclick="openNews('${encodeURIComponent(JSON.stringify(n))}')">
-                        <img src="${n.img || 'https://via.placeholder.com/400x200?text=News'}" onerror="this.src='https://via.placeholder.com/400x200?text=No+Image'">
+                        <img src="${n.img || 'https://via.placeholder.com/400x200?text=News'}">
                         <div class="news-info">
-                            <span class="news-tag">${n.category || 'Подія'}</span>
                             <div class="news-title">${n.title}</div>
                             <div class="news-date">${n.date || ''}</div>
                         </div>
                     </div>
                 `).join('');
-            } catch(e) { grid.innerHTML = "<p style='grid-column: 1/-1; text-align:center; color:red;'>Сервер офлайн.</p>"; }
+            } catch(e) { grid.innerHTML = "<p>Помилка завантаження</p>"; }
         }
 
+        // 2. КЕРУВАННЯ МОДАЛКАМИ
         function openNews(data) {
             const n = JSON.parse(decodeURIComponent(data));
             document.getElementById('mImg').src = n.img || '';
             document.getElementById('mTitle').innerText = n.title;
-            document.getElementById('mDate').innerText = n.date || '';
             document.getElementById('mText').innerText = n.content;
             document.getElementById('newsModal').style.display = 'block';
             document.body.style.overflow = 'hidden';
@@ -221,6 +234,18 @@
             document.body.style.overflow = 'auto';
         }
 
+        function openContact() {
+            generateCaptcha();
+            document.getElementById('contactModal').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeContact() {
+            document.getElementById('contactModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        // 3. CAPTCHA & FORM
         let currentCode = "";
         function generateCaptcha() {
             currentCode = Math.random().toString(36).substring(2, 6).toUpperCase();
@@ -231,7 +256,7 @@
             e.preventDefault();
             const status = document.getElementById('formStatus');
             const formData = new FormData(e.target);
-            const data = Object.fromEntries(formData.entries());
+            const data = Object.fromEntries(formData);
 
             if (data.hp_name || data.captcha.toUpperCase() !== currentCode) {
                 status.innerText = "Помилка перевірки!";
@@ -247,17 +272,18 @@
             });
 
             if (res.ok) {
-                status.innerText = "Успішно!";
-                e.target.reset();
-                generateCaptcha();
+                status.innerText = "Успішно надіслано!";
+                setTimeout(closeContact, 2000);
             }
         };
 
-        generateCaptcha();
         loadNews();
 
         window.onclick = function(event) {
-            if (event.target == document.getElementById('newsModal')) closeNews();
+            if (event.target.className === 'modal') {
+                closeNews();
+                closeContact();
+            }
         }
     </script>
 </body>
