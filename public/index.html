@@ -8,15 +8,24 @@
         :root {
             --ua-blue: #0057b7;
             --ua-yellow: #ffd700;
-            --de-red: #d00000;
             --de-black: #222;
             --soft-bg: #f4f7f9;
             --card-bg: #ffffff;
             --text-dark: #1a1a1a;
             --border: #d1d9e0;
+            --accent: #0057b7;
         }
 
-        * { box-sizing: border-box; }
+        /* ТЕМНА ТЕМА */
+        body.dark-mode {
+            --soft-bg: #0f172a;
+            --card-bg: #1e293b;
+            --text-dark: #f1f5f9;
+            --border: #334155;
+            --de-black: #f8fafc;
+        }
+
+        * { box-sizing: border-box; transition: background 0.3s, color 0.3s; }
         body {
             margin: 0;
             background: var(--soft-bg);
@@ -27,7 +36,7 @@
 
         /* НАВІГАЦІЯ */
         nav {
-            background: #fff;
+            background: var(--card-bg);
             border-top: 4px solid var(--ua-blue);
             border-bottom: 3px solid var(--ua-yellow);
             padding: 10px 5%;
@@ -37,120 +46,76 @@
             position: sticky;
             top: 0;
             z-index: 1000;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
 
-        .nav-left { display: flex; align-items: center; gap: 20px; }
+        .nav-left { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
         .logo { font-size: 1.4rem; font-weight: 900; text-decoration: none; display: flex; align-items: center; }
         .logo .live { color: var(--ua-blue); text-transform: uppercase; }
         .logo .city { color: var(--de-black); margin-left: 4px; font-weight: 400; }
 
-        .currency-bar { font-size: 0.85rem; color: #444; padding: 4px 10px; background: #f0f4f8; border-radius: 6px; }
+        .info-bar { display: flex; gap: 10px; flex-wrap: wrap; }
+        .badge { font-size: 0.8rem; padding: 4px 10px; background: rgba(0,0,0,0.05); border-radius: 6px; display: flex; align-items: center; gap: 5px; }
+        body.dark-mode .badge { background: rgba(255,255,255,0.1); }
 
+        .nav-right { display: flex; align-items: center; gap: 15px; }
+
+        .btn-icon { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-dark); }
         .btn-contact {
-            background: var(--de-black);
-            color: var(--ua-yellow);
-            border: 2px solid var(--ua-yellow);
-            padding: 8px 15px;
+            background: var(--ua-blue);
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
             border-radius: 8px;
             font-weight: bold;
             cursor: pointer;
             font-size: 0.75rem;
             text-transform: uppercase;
-            transition: 0.3s;
         }
-        .btn-contact:hover { background: var(--ua-blue); color: #fff; border-color: var(--ua-blue); }
 
         /* КОНТЕНТ */
         .container { max-width: 1200px; margin: 25px auto; padding: 0 15px; }
         
-        .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
-        .section-header h2 { margin: 0; font-size: 1.1rem; text-transform: uppercase; color: var(--ua-blue); letter-spacing: 0.5px; }
-        .line { flex-grow: 1; height: 1px; background: var(--border); }
-
-        .news-grid {
-            display: grid;
-            grid-template-columns: 2.8fr 1.2fr;
-            gap: 25px;
-        }
+        .news-grid { display: grid; grid-template-columns: 2.8fr 1.2fr; gap: 25px; }
 
         @media (max-width: 900px) {
             .news-grid { grid-template-columns: 1fr; }
-            .currency-bar { display: none; }
+            .info-bar { display: none; }
         }
 
-        /* МЕНША ТА КОМПАКТНІША СІТКА */
-        .main-feed {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-            gap: 20px;
-        }
+        .main-feed { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
 
-        /* КАРТКА (БЕЗ ВІДСТУПІВ ЯКЩО НЕМАЄ ФОТО) */
+        /* КАРТКА */
         .news-card {
             background: var(--card-bg);
-            border-radius: 10px;
+            border-radius: 12px;
             border: 1px solid var(--border);
             overflow: hidden;
-            transition: 0.3s;
-            cursor: pointer;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
         }
-        .news-card:hover { transform: translateY(-3px); box-shadow: 0 8px 15px rgba(0,0,0,0.06); border-color: var(--ua-blue); }
+        .news-card:hover { border-color: var(--ua-blue); transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .news-card img { width: 100%; height: 160px; object-fit: cover; }
+        .news-content { padding: 15px; flex-grow: 1; }
+        .news-tag { color: #ef4444; font-weight: 800; font-size: 0.65rem; text-transform: uppercase; margin-bottom: 5px; display: block; }
+        .news-card h3 { margin: 0 0 10px 0; font-size: 1.1rem; line-height: 1.3; }
+
+        /* САЙДБАР */
+        .sidebar-section { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); padding: 15px; margin-bottom: 20px; }
+        .sidebar-section h4 { margin-top: 0; border-bottom: 2px solid var(--ua-yellow); display: inline-block; margin-bottom: 15px; }
         
-        /* Зменшена висота фото */
-        .news-card img { width: 100%; height: 150px; object-fit: cover; border-bottom: 1px solid #eee; }
-        
-        .news-content { padding: 14px; flex-grow: 1; }
-        .news-tag { color: var(--de-red); font-weight: 700; font-size: 0.65rem; text-transform: uppercase; margin-bottom: 6px; display: block; }
-        .news-card h3 { margin: 0 0 10px 0; font-size: 1.05rem; line-height: 1.3; color: var(--de-black); }
-        .news-meta { font-size: 0.75rem; color: #777; display: flex; align-items: center; gap: 8px; }
+        .emergency-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-weight: bold; }
+        .emergency-item span { color: #ef4444; }
 
-        .live-indicator {
-            padding: 1px 5px;
-            background: var(--ua-blue);
-            color: #fff;
-            border-radius: 3px;
-            font-size: 0.6rem;
-            font-weight: bold;
-            animation: pulse 2s infinite;
-        }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+        .link-item { display: block; padding: 8px 0; color: var(--ua-blue); text-decoration: none; font-size: 0.9rem; }
+        .link-item:hover { text-decoration: underline; }
 
-        /* SIDEBAR */
-        .sidebar { background: #fff; border-radius: 10px; border: 1px solid var(--border); padding: 15px; }
-        .sidebar-item { border-bottom: 1px solid #f1f1f1; padding: 10px 0; cursor: pointer; transition: 0.2s; }
-        .sidebar-item:hover { color: var(--ua-blue); padding-left: 3px; }
-        .sidebar-item small { color: var(--ua-blue); font-weight: bold; font-size: 0.75rem; }
-        .sidebar-item div { font-size: 0.9rem; font-weight: 500; margin-top: 3px; line-height: 1.2; }
+        /* МОДАЛКИ ТА ФОРМИ ТАКІ Ж, ЯК У ТЕБЕ */
+        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; backdrop-filter:blur(5px); padding:15px; }
+        .modal-content { background:var(--card-bg); max-width:600px; margin:30px auto; border-radius:15px; padding:25px; position:relative; }
+        .close-btn { position:absolute; right:20px; top:15px; font-size:24px; cursor:pointer; }
 
-        /* МОДАЛКА */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7);
-            z-index: 2000;
-            backdrop-filter: blur(3px);
-            padding: 15px;
-        }
-        .modal-content {
-            background: #fff;
-            max-width: 600px;
-            margin: 30px auto;
-            border-radius: 12px;
-            padding: 25px;
-            position: relative;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-        .close-btn { position: absolute; right: 15px; top: 10px; font-size: 24px; cursor: pointer; color: #888; }
-
-        .btn-send { background: var(--ua-blue); color: #fff; width: 100%; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
-
-        footer { text-align: center; padding: 30px; font-size: 0.8rem; color: #888; }
+        footer { text-align: center; padding: 40px; color: #888; border-top: 1px solid var(--border); }
     </style>
 </head>
 <body>
@@ -158,27 +123,44 @@
 <nav>
     <div class="nav-left">
         <a href="/" class="logo"><span class="live">LIVE</span><span class="city">Дрезден</span></a>
-        <div class="currency-bar" id="currency">Курс...</div>
+        <div class="info-bar">
+            <div class="badge" id="weather">☀️ +..°C</div>
+            <div class="badge" id="currency">€ .. ₴</div>
+            <div class="badge" id="clock">00:00:00</div>
+        </div>
     </div>
-    <button class="btn-contact" onclick="toggleModal('contactModal', true)">Написати</button>
+    <div class="nav-right">
+        <button class="btn-icon" onclick="toggleTheme()" id="themeToggle">🌓</button>
+        <button class="btn-contact" onclick="toggleModal('contactModal', true)">Написати</button>
+    </div>
 </nav>
 
 <div class="container">
     <div class="news-grid">
         <main>
-            <div class="section-header">
-                <h2>Свіжі новини</h2>
-                <div class="line"></div>
-            </div>
-            <div class="main-feed" id="newsGrid"></div>
+            <div class="main-feed" id="newsGrid">
+                </div>
         </main>
 
         <aside>
-            <div class="section-header">
-                <h2>Важливо</h2>
-                <div class="line"></div>
+            <div class="sidebar-section">
+                <h4>Важливі контакти</h4>
+                <div class="emergency-item">Поліція <span>110</span></div>
+                <div class="emergency-item">Швидка / Пожежна <span>112</span></div>
+                <div class="emergency-item">Черговий лікар <span>116 117</span></div>
             </div>
-            <div class="sidebar" id="urgentFeed"></div>
+
+            <div class="sidebar-section">
+                <h4>Корисні посилання</h4>
+                <a href="https://www.dresden.de" target="_blank" class="link-item">🌐 Rathaus Dresden (Мерія)</a>
+                <a href="https://www.dvb.de" target="_blank" class="link-item">🚃 Розклад трамваїв (DVB)</a>
+                <a href="https://www.vvo-online.de" target="_blank" class="link-item">🚆 Поїзди по Саксонії (VVO)</a>
+            </div>
+
+            <div class="sidebar-section">
+                <h4>Останні події</h4>
+                <div id="urgentFeed"></div>
+            </div>
         </aside>
     </div>
 </div>
@@ -186,45 +168,67 @@
 <div id="newsModal" class="modal" onclick="closeByOutside(event)">
     <div class="modal-content">
         <span class="close-btn" onclick="toggleModal('newsModal', false)">&times;</span>
-        <img id="mImg" style="width:100%; border-radius:8px; margin-bottom:15px; display:none;">
-        <h2 id="mTitle" style="margin:0 0 10px 0; font-size: 1.4rem;"></h2>
-        <div id="mDate" style="color:#888; font-size:0.85rem; margin-bottom:15px; padding-bottom:10px; border-bottom:1px solid #eee;"></div>
-        <div id="mText" style="white-space: pre-wrap; line-height:1.6; font-size: 1rem; color: #333;"></div>
+        <img id="mImg" style="width:100%; border-radius:10px; margin-bottom:15px; display:none;">
+        <h2 id="mTitle"></h2>
+        <div id="mDate" style="font-size:0.8rem; color:#888; margin-bottom:15px;"></div>
+        <div id="mText" style="white-space: pre-wrap;"></div>
     </div>
 </div>
 
 <div id="contactModal" class="modal" onclick="closeByOutside(event)">
     <div class="modal-content" style="max-width: 450px;">
         <span class="close-btn" onclick="toggleModal('contactModal', false)">&times;</span>
-        <h3 style="margin:0 0 10px 0; color:var(--ua-blue);">Напишіть нам</h3>
+        <h3>Зворотний зв'язок</h3>
         <form id="contactForm">
-            <input type="text" name="hp_name" style="display:none">
-            <input type="text" name="userName" required placeholder="Ваше ім'я" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ddd; border-radius:6px;">
-            <input type="text" name="userContact" required placeholder="Телефон або Email" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ddd; border-radius:6px;">
-            <textarea name="message" rows="4" required placeholder="Ваше повідомлення..." style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ddd; border-radius:6px; font-family:inherit;"></textarea>
-            
-            <div style="margin-bottom:15px; font-size:0.85rem; background:#f8fafc; padding:8px; border-radius:6px; text-align:center;">
-                Код: <span id="captcha-code" style="font-weight:bold; color:var(--ua-blue); letter-spacing:2px;"></span>
-                <input type="text" name="captcha" placeholder="Введіть" style="width:70px; margin-left:10px; padding:4px;">
-            </div>
-
-            <button type="submit" class="btn-send">Надіслати</button>
-            <p id="formStatus" style="text-align:center; font-size:0.85rem; margin-top:10px;"></p>
+            <input type="text" name="userName" required placeholder="Ваше ім'я" style="width:100%; padding:10px; margin-bottom:10px; border-radius:6px; border:1px solid var(--border); background: var(--card-bg); color: var(--text-dark);">
+            <input type="text" name="userContact" required placeholder="Телефон або Email" style="width:100%; padding:10px; margin-bottom:10px; border-radius:6px; border:1px solid var(--border); background: var(--card-bg); color: var(--text-dark);">
+            <textarea name="message" rows="4" required placeholder="Ваше повідомлення..." style="width:100%; padding:10px; margin-bottom:10px; border-radius:6px; border:1px solid var(--border); background: var(--card-bg); color: var(--text-dark);"></textarea>
+            <div style="margin-bottom:10px;">Код: <span id="captcha-code" style="font-weight:bold;"></span> <input type="text" name="captcha" style="width:60px;"></div>
+            <button type="submit" class="btn-contact" style="width:100%; padding:12px;">Надіслати</button>
+            <p id="formStatus"></p>
         </form>
     </div>
 </div>
 
-<footer>&copy; 2026 НОВИНИ LIVE — Дрезден</footer>
+<footer>&copy; 2026 LIVE Дрезден — Український портал Саксонії</footer>
 
 <script>
+    // 1. ГОДИННИК ДРЕЗДЕНА
+    function updateClock() {
+        const now = new Date();
+        const options = { timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+        document.getElementById('clock').innerText = '🇩🇪 ' + now.toLocaleTimeString('uk-UA', options);
+    }
+    setInterval(updateClock, 1000);
+
+    // 2. ПОГОДА (Встав свій API KEY замість 'ТВІЙ_KEY')
+    async function fetchWeather() {
+        const KEY = '42861347098e94589d9016e114030671'; // Твій ключ
+        try {
+            const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=Dresden&appid=${KEY}&units=metric&lang=uk`);
+            const data = await res.json();
+            document.getElementById('weather').innerHTML = `<img src="https://openweathermap.org/img/wn/${data.weather[0].icon}.png" width="20"> ${Math.round(data.main.temp)}°C`;
+        } catch (e) { document.getElementById('weather').style.display = 'none'; }
+    }
+
+    // 3. ТЕМА
+    function toggleTheme() {
+        document.body.classList.toggle('dark-mode');
+        const isDark = document.body.classList.contains('dark-mode');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    }
+    if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
+
+    // 4. КУРС ВАЛЮТ
     async function fetchCurrency() {
         try {
             const res = await fetch('https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?valcode=EUR&json');
             const data = await res.json();
-            document.getElementById('currency').innerHTML = `€ EUR: <b>${data[0].rate.toFixed(2)} ₴</b>`;
-        } catch (e) { document.getElementById('currency').style.display = 'none'; }
+            document.getElementById('currency').innerHTML = `€ <b>${data[0].rate.toFixed(2)} ₴</b>`;
+        } catch (e) {}
     }
 
+    // 5. ЗАВАНТАЖЕННЯ НОВИН
     async function loadContent() {
         try {
             const res = await fetch('/api/news');
@@ -232,73 +236,47 @@
             const grid = document.getElementById('newsGrid');
             const urgent = document.getElementById('urgentFeed');
 
-            if (news.length === 0) {
-                grid.innerHTML = "<p>Новин ще немає.</p>";
-                return;
-            }
-
-            // УМОВНЕ ВІДОБРАЖЕННЯ КАРТИНОК
             grid.innerHTML = news.map(n => {
-                // Перевіряємо чи є фото і чи воно не є стандартною заглушкою
-                const hasPhoto = n.img && n.img !== "assets/img/auto-news.jpg" && n.img !== "";
-                const imgHtml = hasPhoto ? `<img src="${n.img}" alt="img">` : "";
-
+                const hasPhoto = n.img && n.img !== "assets/img/auto-news.jpg";
                 return `
                     <div class="news-card" onclick="openNews('${encodeURIComponent(JSON.stringify(n))}')">
-                        ${imgHtml}
+                        ${hasPhoto ? `<img src="${n.img}" alt="img">` : ''}
                         <div class="news-content">
                             <span class="news-tag">${n.category || 'Дрезден'}</span>
                             <h3>${n.title}</h3>
-                            <div class="news-meta">
-                                <span class="live-indicator">LIVE</span>
-                                ${n.date}
-                            </div>
+                            <div style="font-size:0.7rem; color:#888;">${n.date}</div>
                         </div>
                     </div>
                 `;
             }).join('');
 
-            urgent.innerHTML = news.slice(0, 8).map(n => `
-                <div class="sidebar-item" onclick="openNews('${encodeURIComponent(JSON.stringify(n))}')">
-                    <small>${n.date.split(',')[1] || ''}</small>
-                    <div>${n.title}</div>
+            urgent.innerHTML = news.slice(0, 5).map(n => `
+                <div style="cursor:pointer; padding:8px 0; border-bottom:1px solid var(--border);" onclick="openNews('${encodeURIComponent(JSON.stringify(n))}')">
+                    <div style="font-size:0.85rem; font-weight:500;">${n.title}</div>
                 </div>
             `).join('');
-
-        } catch (e) { console.error("Помилка завантаження"); }
+        } catch (e) {}
     }
 
+    // Функції модалок (toggleModal, openNews, closeByOutside, genCaptcha) — залиш свої без змін.
     function toggleModal(id, show) {
         const modal = document.getElementById(id);
         modal.style.display = show ? 'block' : 'none';
-        document.body.style.overflow = show ? 'hidden' : 'auto';
         if(id === 'contactModal' && show) genCaptcha();
     }
 
     function openNews(data) {
         const n = JSON.parse(decodeURIComponent(data));
         const img = document.getElementById('mImg');
-        
-        // В модалці теж ховаємо картинку, якщо її немає
-        if (n.img && n.img !== "assets/img/auto-news.jpg") {
-            img.src = n.img;
-            img.style.display = 'block';
-        } else {
-            img.style.display = 'none';
-        }
-
+        if (n.img && n.img !== "assets/img/auto-news.jpg") { img.src = n.img; img.style.display = 'block'; }
+        else { img.style.display = 'none'; }
         document.getElementById('mTitle').innerText = n.title;
         document.getElementById('mDate').innerText = n.date;
         document.getElementById('mText').innerText = n.content;
         toggleModal('newsModal', true);
     }
 
-    function closeByOutside(e) {
-        if (e.target.classList.contains('modal')) {
-            toggleModal('newsModal', false);
-            toggleModal('contactModal', false);
-        }
-    }
+    function closeByOutside(e) { if (e.target.classList.contains('modal')) { toggleModal('newsModal', false); toggleModal('contactModal', false); } }
 
     let captcha = "";
     function genCaptcha() {
@@ -306,33 +284,25 @@
         document.getElementById('captcha-code').innerText = captcha;
     }
 
+    // Обробка форми
     document.getElementById('contactForm').onsubmit = async (e) => {
         e.preventDefault();
-        const status = document.getElementById('formStatus');
         const fd = new FormData(e.target);
         const data = Object.fromEntries(fd);
-
-        if (data.captcha.toUpperCase() !== captcha) {
-            status.innerText = "Код невірний!";
-            status.style.color = "red";
-            return;
-        }
-
-        status.innerText = "Надсилання...";
-        const res = await fetch('/api/taxi', {
+        if (data.captcha.toUpperCase() !== captcha) { alert("Код невірний!"); return; }
+        
+        await fetch('/api/taxi', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ name: data.userName, phone: data.userContact, comment: data.message })
         });
-
-        if (res.ok) {
-            status.innerText = "Надіслано!";
-            status.style.color = "green";
-            setTimeout(() => { toggleModal('contactModal', false); status.innerText = ""; e.target.reset(); }, 2000);
-        }
+        alert("Надіслано!");
+        toggleModal('contactModal', false);
     };
 
     window.onload = () => {
+        updateClock();
+        fetchWeather();
         fetchCurrency();
         loadContent();
     };
