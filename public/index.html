@@ -2,7 +2,7 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <title>НОВИНИ LIVE — Твій сервер у Дрездені</title>
+    <title>НОВИНИ LIVE — Дрезден</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <style>
@@ -12,14 +12,6 @@
             --accent: #d4af37;
             --card-bg: rgba(255, 255, 255, 0.08);
             --border: rgba(212, 175, 55, 0.3);
-        }
-
-        .light-theme {
-            --bg: #f5f5f5;
-            --text: #111;
-            --accent: #b8860b;
-            --card-bg: rgba(0, 0, 0, 0.05);
-            --border: rgba(184, 134, 11, 0.3);
         }
 
         * { box-sizing: border-box; }
@@ -41,101 +33,108 @@
         .video-bg video {
             width: 100%; height: 100%;
             object-fit: cover;
-            filter: brightness(0.4);
+            filter: brightness(0.35);
         }
 
-        /* Header */
+        /* Компактний Header */
         header {
-            padding: 80px 20px;
+            padding: 40px 20px; /* Зменшено у 2 рази */
             text-align: center;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent);
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
         }
         header h1 {
-            font-size: 3.5rem;
+            font-size: 2.2rem; /* Було 3.5 */
             margin: 0;
-            letter-spacing: 6px;
+            letter-spacing: 4px;
             color: var(--accent);
             text-transform: uppercase;
-            text-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
         }
+        header p { font-size: 0.9rem; opacity: 0.8; margin-top: 5px; }
 
-        /* Сітка новин */
+        /* Компактна сітка новин */
         .news-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 30px;
-            padding: 40px 10%;
-            min-height: 200px;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); /* Більше карток в рядку */
+            gap: 20px;
+            padding: 20px 5%; /* Менші відступи по боках */
         }
 
         .news-card {
             background: var(--card-bg);
-            backdrop-filter: blur(15px);
-            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
             border: 1px solid var(--border);
             overflow: hidden;
             cursor: pointer;
             transition: 0.3s;
         }
         .news-card:hover {
-            transform: translateY(-10px);
+            transform: translateY(-5px);
             border-color: var(--accent);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
         .news-card img {
             width: 100%;
-            height: 200px;
+            height: 160px; /* Зменшено висоту фото */
             object-fit: cover;
         }
-        .news-info { padding: 20px; }
-        .news-tag { color: var(--accent); font-size: 11px; font-weight: bold; text-transform: uppercase; }
-        .news-title { font-size: 1.4rem; margin: 10px 0; line-height: 1.3; }
+        .news-info { padding: 15px; }
+        .news-tag { color: var(--accent); font-size: 10px; font-weight: bold; text-transform: uppercase; }
+        .news-title { font-size: 1.1rem; margin: 8px 0; line-height: 1.2; font-weight: 500; }
+        .news-date { font-size: 0.8rem; color: #888; }
 
-        /* Модальне вікно */
+        /* Компактне модальне вікно */
         #newsModal {
             display: none;
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95);
+            background: rgba(0,0,0,0.9);
             z-index: 999;
             overflow-y: auto;
-            padding: 40px 15px;
+            padding: 20px 10px;
         }
-        .modal-content { max-width: 800px; margin: auto; }
-        .close-btn { float: right; color: var(--accent); font-size: 40px; cursor: pointer; }
+        .modal-content { 
+            max-width: 600px; /* Було 800px */
+            margin: auto; 
+            background: #111; 
+            padding: 25px; 
+            border-radius: 20px; 
+            border: 1px solid var(--border);
+        }
+        .close-btn { float: right; color: var(--accent); font-size: 30px; cursor: pointer; line-height: 1; }
 
-        /* Форма */
+        /* Компактна форма */
         .contact-section {
             background: var(--card-bg);
-            margin: 50px 10%;
-            padding: 40px;
-            border-radius: 25px;
+            margin: 30px 5%;
+            padding: 25px;
+            border-radius: 20px;
             border: 1px solid var(--border);
             backdrop-filter: blur(10px);
         }
+        .contact-section h2 { font-size: 1.5rem; margin-top: 0; }
         input, textarea {
             width: 100%;
-            padding: 15px;
-            margin: 10px 0;
+            padding: 12px;
+            margin: 8px 0;
             background: rgba(255,255,255,0.05);
             border: 1px solid var(--border);
             color: #fff;
-            border-radius: 10px;
+            border-radius: 8px;
+            font-size: 0.9rem;
         }
-        .hp-field { display: none !important; position: absolute; left: -9999px; } /* Захист */
+        .hp-field { display: none !important; position: absolute; left: -9999px; }
 
         button {
             background: var(--accent);
             color: #000;
             border: none;
-            padding: 15px 30px;
+            padding: 12px;
             font-weight: bold;
-            border-radius: 10px;
+            border-radius: 8px;
             cursor: pointer;
             width: 100%;
-            transition: 0.3s;
+            font-size: 1rem;
         }
-        button:hover { filter: brightness(1.2); }
     </style>
 </head>
 <body>
@@ -147,8 +146,8 @@
     </div>
 
     <header>
-        <h1 id="main-title">Новини LIVE</h1>
-        <p>Оперативні події з твого власного сервера у Дрездені</p>
+        <h1>Новини LIVE</h1>
+        <p>Оперативні події у Дрездені</p>
     </header>
 
     <div class="news-grid" id="newsGrid">
@@ -157,10 +156,10 @@
     <div id="newsModal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeNews()">&times;</span>
-            <img id="mImg" style="width:100%; border-radius:15px; margin-bottom:20px;">
-            <h1 id="mTitle" style="color:var(--accent);"></h1>
-            <p id="mDate" style="color:#888;"></p>
-            <div id="mText" style="line-height:1.8; font-size:1.1rem; white-space: pre-wrap;"></div>
+            <img id="mImg" style="width:100%; border-radius:12px; margin-bottom:15px; max-height: 300px; object-fit: cover;">
+            <h2 id="mTitle" style="color:var(--accent); margin: 0 0 10px 0;"></h2>
+            <p id="mDate" style="color:#888; font-size: 0.8rem; margin-bottom: 15px;"></p>
+            <div id="mText" style="line-height:1.6; font-size:1rem; white-space: pre-wrap;"></div>
         </div>
     </div>
 
@@ -168,41 +167,35 @@
         <h2 style="text-align:center;">Зворотний зв'язок</h2>
         <form id="contactForm">
             <input type="text" name="hp_name" class="hp-field" tabindex="-1" autocomplete="off">
-            
             <input type="text" name="userName" placeholder="Ваше ім'я" required>
             <input type="email" name="userEmail" placeholder="Ваш Email" required>
-            <textarea name="message" rows="5" placeholder="Ваше повідомлення..."></textarea>
+            <textarea name="message" rows="3" placeholder="Повідомлення..."></textarea>
             
-            <div style="margin:10px 0; background:rgba(255,255,255,0.1); padding:10px; border-radius:8px; text-align:center;">
-                Код перевірки: <span id="bot-letters" style="color:var(--accent); font-weight:bold; letter-spacing:3px;"></span>
-                <input type="text" name="captcha" placeholder="Введіть код" required style="width:120px; margin-left:10px;">
+            <div style="margin:10px 0; font-size: 0.85rem; text-align:center;">
+                Код: <span id="bot-letters" style="color:var(--accent); font-weight:bold; letter-spacing:2px;"></span>
+                <input type="text" name="captcha" placeholder="Код" required style="width:80px; margin-left:10px; padding: 8px;">
             </div>
             
-            <button type="submit">Надіслати повідомлення</button>
-            <p id="formStatus" style="text-align:center; margin-top:10px;"></p>
+            <button type="submit">Надіслати</button>
+            <p id="formStatus" style="text-align:center; margin-top:10px; font-size: 0.9rem;"></p>
         </form>
     </section>
 
     <script>
-        // 1. ЗАВАНТАЖЕННЯ НОВИН
+        // JS залишається майже таким самим, але з LoadNews для компактності
         async function loadNews() {
             const grid = document.getElementById('newsGrid');
-            grid.innerHTML = "<p style='grid-column: 1/-1; text-align:center;'>Завантаження стрічки...</p>";
-
+            grid.innerHTML = "<p style='grid-column: 1/-1; text-align:center;'>Завантаження...</p>";
             try {
                 const res = await fetch('/api/news');
-                if (!res.ok) throw new Error("Сервер не відповідає");
-                
                 const news = await res.json();
-                
                 if (news.length === 0) {
-                    grid.innerHTML = "<p style='grid-column: 1/-1; text-align:center;'>Новин поки немає. Зайдіть в адмінку, щоб додати першу!</p>";
+                    grid.innerHTML = "<p style='grid-column: 1/-1; text-align:center;'>Новин немає.</p>";
                     return;
                 }
-                
                 grid.innerHTML = news.map(n => `
                     <div class="news-card" onclick="openNews('${encodeURIComponent(JSON.stringify(n))}')">
-                        <img src="${n.img || 'assets/img/news-placeholder.jpg'}" onerror="this.src='https://via.placeholder.com/400x200?text=No+Image'">
+                        <img src="${n.img || 'https://via.placeholder.com/400x200?text=News'}" onerror="this.src='https://via.placeholder.com/400x200?text=No+Image'">
                         <div class="news-info">
                             <span class="news-tag">${n.category || 'Подія'}</span>
                             <div class="news-title">${n.title}</div>
@@ -210,16 +203,12 @@
                         </div>
                     </div>
                 `).join('');
-            } catch(e) { 
-                grid.innerHTML = "<p style='grid-column: 1/-1; text-align:center; color:red;'>Помилка зв'язку з сервером. Перевірте Termux.</p>";
-                console.error("Load error:", e); 
-            }
+            } catch(e) { grid.innerHTML = "<p style='grid-column: 1/-1; text-align:center; color:red;'>Сервер офлайн.</p>"; }
         }
 
-        // 2. МОДАЛЬНЕ ВІКНО
         function openNews(data) {
             const n = JSON.parse(decodeURIComponent(data));
-            document.getElementById('mImg').src = n.img || 'https://via.placeholder.com/800x400?text=No+Image';
+            document.getElementById('mImg').src = n.img || '';
             document.getElementById('mTitle').innerText = n.title;
             document.getElementById('mDate').innerText = n.date || '';
             document.getElementById('mText').innerText = n.content;
@@ -232,73 +221,43 @@
             document.body.style.overflow = 'auto';
         }
 
-        // 3. CAPTCHA & FORM
-        const form = document.getElementById('contactForm');
         let currentCode = "";
-
         function generateCaptcha() {
             currentCode = Math.random().toString(36).substring(2, 6).toUpperCase();
             document.getElementById('bot-letters').innerText = currentCode;
         }
 
-        form.onsubmit = async (e) => {
+        document.getElementById('contactForm').onsubmit = async (e) => {
             e.preventDefault();
             const status = document.getElementById('formStatus');
-            const formData = new FormData(form);
+            const formData = new FormData(e.target);
             const data = Object.fromEntries(formData.entries());
 
-            // Honeypot перевірка
-            if (data.hp_name) {
-                console.warn("Спроба бот-атаки!");
-                return;
-            }
-
-            // Captcha перевірка
-            if (data.captcha.toUpperCase() !== currentCode) {
-                status.style.color = "red";
-                status.innerText = "Невірний код перевірки!";
+            if (data.hp_name || data.captcha.toUpperCase() !== currentCode) {
+                status.innerText = "Помилка перевірки!";
                 generateCaptcha();
                 return;
             }
 
-            status.style.color = "#fff";
             status.innerText = "Надсилання...";
+            const res = await fetch('/api/taxi', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: data.userName, phone: data.userEmail, address: "Сайт", comment: data.message })
+            });
 
-            try {
-                // Відправляємо в API таксі, яке ми налаштували раніше
-                const res = await fetch('/api/taxi', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        name: data.userName,
-                        phone: data.userEmail, // Використовуємо імейл або телефон
-                        address: "Зворотний зв'язок із сайту",
-                        comment: data.message
-                    })
-                });
-
-                if (res.ok) {
-                    status.style.color = "var(--accent)";
-                    status.innerText = "Повідомлення успішно надіслано!";
-                    form.reset();
-                    generateCaptcha();
-                } else {
-                    throw new Error("Помилка API");
-                }
-            } catch (err) {
-                status.style.color = "red";
-                status.innerText = "Помилка відправки. Спробуйте пізніше.";
+            if (res.ok) {
+                status.innerText = "Успішно!";
+                e.target.reset();
+                generateCaptcha();
             }
         };
 
-        // Запуск
         generateCaptcha();
         loadNews();
 
-        // Закриття модалки при кліку поза нею
         window.onclick = function(event) {
-            const modal = document.getElementById('newsModal');
-            if (event.target == modal) closeNews();
+            if (event.target == document.getElementById('newsModal')) closeNews();
         }
     </script>
 </body>
