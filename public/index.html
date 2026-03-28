@@ -117,7 +117,6 @@
         }
         .bus-ukraine { background: #2ecc71; }
 
-        /* НОВІ ФІШКИ */
         .german-box { background: var(--ua-blue); color: white; padding: 15px; border-radius: 12px; text-align: center; }
         
         #floating-sos {
@@ -149,7 +148,8 @@
         <div class="info-bar">
             <div class="badge" id="weather">☀️ +..°C</div>
             <div class="badge" id="currency">€ .. ₴</div>
-            <div class="badge" id="clock">00:00:00</div>
+            <div class="badge" id="clock">🇩🇪 00:00:00</div>
+            <div class="badge" id="clock-ua" style="border-left: 2px solid var(--ua-blue);">🇺🇦 00:00:00</div>
         </div>
     </div>
     <div class="nav-right">
@@ -170,6 +170,22 @@
                 <div id="status-content" style="padding: 10px; border-radius: 8px; font-weight: bold; text-align: center; font-size: 0.9rem;">
                     Завантаження...
                 </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h4>⛰️ Туризм у Саксонії</h4>
+                <p style="font-size: 0.8rem; margin-top: 0;">Карти та маршрути:</p>
+                <a href="https://www.saechsische-schweiz.de/en/region/maps" target="_blank" class="link-item">⛰️ Саксонська Швейцарія (Карта)</a>
+                <a href="https://www.schloesserland-sachsen.de/en/map-view/" target="_blank" class="link-item">🏰 Замки Саксонії (Інтерактив)</a>
+                <a href="https://www.elberadweg.de/en/interactive-map/" target="_blank" class="link-item">🚲 Веломаршрут вздовж Ельби</a>
+            </div>
+
+            <div class="sidebar-section">
+                <h4>🏊 Басейни Дрездена</h4>
+                <p style="font-size: 0.8rem; margin-top: 0;">Графік та ціни:</p>
+                <a href="https://www.dresdner-baeder.de/hallenbaeder/georg-arnhold-bad/" target="_blank" class="link-item">🌊 Georg-Arnhold-Bad (Центр)</a>
+                <a href="https://www.dresdner-baeder.de/hallenbaeder/nordbad/" target="_blank" class="link-item">🏊 Nordbad (Neustadt)</a>
+                <a href="https://www.dresdner-baeder.de/" target="_blank" class="transport-btn" style="background: #00a3e0;">🕒 Дивитись розклад усіх</a>
             </div>
 
             <div class="sidebar-section">
@@ -247,10 +263,13 @@
 <footer>&copy; 2026 LIVE Дрезден — Портал для українців у Саксонії</footer>
 
 <script>
+    // Оновлена функція годинника з двома часовими поясами
     function updateClock() {
         const now = new Date();
-        const options = { timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit', second: '2-digit' };
-        document.getElementById('clock').innerText = '🇩🇪 ' + now.toLocaleTimeString('uk-UA', options);
+        const deOptions = { timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+        const uaOptions = { timeZone: 'Europe/Kyiv', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+        document.getElementById('clock').innerText = '🇩🇪 ' + now.toLocaleTimeString('uk-UA', deOptions);
+        document.getElementById('clock-ua').innerText = '🇺🇦 ' + now.toLocaleTimeString('uk-UA', uaOptions);
     }
     setInterval(updateClock, 1000);
 
@@ -263,7 +282,6 @@
         } catch (e) { document.getElementById('weather').style.display = 'none'; }
     }
 
-    // 🆕 НІМЕЦЬКА МОВА
     function setGermanWord() {
         const words = [
             { de: "Die Anmeldung", ua: "Реєстрація", ex: "Ich brauche einen Termin." },
@@ -278,7 +296,6 @@
         document.getElementById('de-example').innerText = word.ex;
     }
 
-    // 🆕 СТАТУС МАГАЗИНІВ
     function checkShops() {
         const now = new Date();
         const day = now.getDay();
