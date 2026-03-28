@@ -1,6 +1,7 @@
 import express from "express";
 import axios from "axios";
 import { promises as fs } from "fs"; 
+import path from "path";
 
 const router = express.Router();
 
@@ -9,77 +10,99 @@ const CHAT_ID = "8257665442";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "pedro2026";
 const LOG_FILE = "./taxi-log.json";
 
-// Ініціалізація файлу
+// Ініціалізація файлу (безпечний запуск)
 async function initLogs() {
-    try { await fs.access(LOG_FILE); } 
-    catch { await fs.writeFile(LOG_FILE, "[]"); }
+    try { 
+        await fs.access(LOG_FILE); 
+    } catch { 
+        await fs.writeFile(LOG_FILE, JSON.stringify([])); 
+    }
 }
 initLogs();
 
-// 1. КЛІЄНТ ЗАМОВЛЯЄ ТАКСІ (З ЗАХИСТОМ ВІД БОТІВ)
+// 1. ПРИЙОМ ЗАМОВЛЕННЯ / ПОВІДОМЛЕННЯ
 router.post("/", async (req, res) => {
-    // 🛡️ HONEYPOT CHECK (Пастка для ботів)
-    // Якщо бот заповнив приховане поле hp_name - ігноруємо
+    // 🛡️ Пастка для ботів
     if (req.body.hp_name) {
-        console.warn("Spam bot blocked by Honeypot");
-        return res.status(200).send("OK"); // Удаємо вигляд, що все добре
+        console.warn("Спроба спаму заблокована");
+        return res.status(200).send("OK");
     }
 
     const { name, phone, address, comment } = req.body;
 
     if (!name || !phone) {
-        return res.status(400).send("Заповніть обов'язкові поля!");
+        return res.status(400).send("Ім'я та телефон обов'язкові!");
     }
 
     try {
-        const now = new Date().toLocaleString('uk-UA');
-        const newOrder = { id: Date.now(), time: now, name, phone, address, comment };
+        const now = new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Berlin' });
+        const newOrder = { 
+            id: Date.now().toString(), 
+            time: now, 
+            name: name.trim(), 
+            phone: phone.trim(), 
+            address: address ? address.trim() : "Не вказано", 
+            comment: comment ? comment.trim() : "-" 
+        };
 
-        // Збереження в файл
+        // Читаємо та оновлюємо лог
         const fileData = await fs.readFile(LOG_FILE, "utf-8");
-        const logs = JSON.parse(fileData);
+        const logs = JSON.parse(fileData || "[]");
         logs.push(newOrder);
         await fs.writeFile(LOG_FILE, JSON.stringify(logs, null, 2));
 
-        // Відправка в Telegram
-        const text = `🚕 *Нове замовлення!*\n\n👤 Ім'я: ${name}\n📞 Тел: ${phone}\n📍 Адреса: ${address}\n💬 Комент: ${comment || '-'}`;
-        
+        // 📲 Стильний Telegram (використовуємо HTML замість Markdown для надійності)
+        const text = `
+<b>🚕 НОВЕ ЗАМОВЛЕННЯ / ПИТАННЯ</b>
+──────────────────
+👤 <b>Ім'я:</b> ${newOrder.name}
+📞 <b>Тел:</b> <code>${newOrder.phone}</code>
+📍 <b>Куди:</b> ${newOrder.address}
+💬 <b>Коментар:</b> <i>${newOrder.comment}</i>
+──────────────────
+🕒 <i>Час: ${newOrder.time}</i>`;
+
         await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
             chat_id: CHAT_ID,
-            text,
-            parse_mode: "Markdown"
+            text: text,
+            parse_mode: "HTML"
         });
 
-        res.send("Замовлення прийнято! 🚕");
+        res.status(200).send("Дякуємо! Ваша заявка прийнята. 🚕");
     } catch (err) {
-        res.status(500).send("Помилка сервера");
+        console.error("Помилка таксі:", err.message);
+        res.status(500).send("Помилка відправки");
     }
 });
 
-// 2. АДМІН ОТРИМУЄ СПИСОК (POST для безпеки)
+// 2. ОТРИМАННЯ ЛОГІВ ДЛЯ АДМІНКИ
 router.post("/admin", async (req, res) => {
     const { pass } = req.body;
-    if (pass !== ADMIN_PASSWORD) return res.status(403).json({ error: "Невірний пароль" });
+    if (pass !== ADMIN_PASSWORD) return res.status(403).json({ error: "Доступ обмежено" });
     
     try {
         const fileData = await fs.readFile(LOG_FILE, "utf-8");
-        res.json(JSON.parse(fileData).reverse());
+        const logs = JSON.parse(fileData || "[]");
+        // Повертаємо останні замовлення зверху
+        res.json(logs.reverse());
     } catch (error) {
-        res.status(500).json({ error: "Помилка читання логів" });
+        res.status(500).json({ error: "Не вдалося завантажити заявки" });
     }
 });
 
-// 3. АДМІН ВИДАЛЯЄ ЗАЯВКУ
+// 3. ВИДАЛЕННЯ ЗАЯВКИ
 router.post("/delete", async (req, res) => {
     const { pass, id } = req.body;
-    if (pass !== ADMIN_PASSWORD) return res.status(403).send("Доступ заборонено");
+    if (pass !== ADMIN_PASSWORD) return res.status(403).send("Заборонено");
 
     try {
         const data = await fs.readFile(LOG_FILE, "utf-8");
-        let logs = JSON.parse(data);
-        logs = logs.filter(item => item.id.toString() !== id.toString());
-        await fs.writeFile(LOG_FILE, JSON.stringify(logs, null, 2));
-        res.send("Видалено");
+        let logs = JSON.parse(data || "[]");
+        
+        const newLogs = logs.filter(item => item.id !== id);
+        await fs.writeFile(LOG_FILE, JSON.stringify(newLogs, null, 2));
+        
+        res.status(200).send("Видалено");
     } catch (err) {
         res.status(500).send("Помилка видалення");
     }
