@@ -14,7 +14,14 @@ import newsRoutes from "./routes/news.js";
 import taxiRoute from "./routes/taxi.js";
 
 const app = express();
-const parser = new Parser();
+
+// 🛠️ ДОДАНО HEADERS: Тепер Дрезден не буде нас блокувати
+const parser = new Parser({
+    headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36',
+        'Accept': 'application/rss+xml, application/xml;q=0.9, */*;q=0.8'
+    }
+});
 
 app.use(cors());
 app.use(express.json());
@@ -24,11 +31,10 @@ const BOT_TOKEN = "8381037035:AAGhfS8LbZQCgPf_oAVyvG9tXDLtfAxGVug";
 const CHAT_ID = "8257665442";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "pedro2026";
 
-// 📁 АБСОЛЮТНІ ШЛЯХИ (для стабільності на Render)
+// 📁 АБСОЛЮТНІ ШЛЯХИ
 const NEWS_FILE = path.join(__dirname, "news-data.json");
 const uploadDir = path.join(__dirname, "uploads");
 
-// Перевірка папок
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 if (!fs.existsSync(NEWS_FILE)) fs.writeFileSync(NEWS_FILE, JSON.stringify([]));
 
@@ -52,18 +58,18 @@ const logSecurity = async (type, ip, details) => {
                 text: `<b>БЕЗПЕКА САЙТУ</b>\n${message}`,
                 parse_mode: "HTML"
             });
-        } catch (e) { console.error("Помилка відправки логу в TG"); }
+        } catch (e) { console.error("TG Log Error"); }
     }
 };
 
-// 🆕 АВТО-ГРАБЕР НОВИН (Виправлений)
+// 🆕 АВТО-ГРАБЕР НОВИН
 const RSS_SOURCES = [
     { name: "DW Німеччина", url: "https://rss.dw.com/xml/rss-ukr-all" },
     { name: "Дрезден Офіційно", url: "https://www.dresden.de/rss/de/presseservice.xml" }
 ];
 
 async function autoFetchNews() {
-    console.log("🔄 Спроба оновлення новин через грабер...");
+    console.log("🔄 Спроба оновлення новин...");
     try {
         const fileData = fs.readFileSync(NEWS_FILE, "utf-8");
         let news = JSON.parse(fileData || "[]");
@@ -71,16 +77,17 @@ async function autoFetchNews() {
 
         for (const source of RSS_SOURCES) {
             try {
+                console.log(`📡 Запитую: ${source.name}`);
                 const feed = await parser.parseURL(source.url);
+                
                 feed.items.forEach(item => {
-                    // Перевірка на дублікати
                     if (!news.some(n => n.title === item.title)) {
-                        // Очищення тексту від HTML-тегів (якщо приходять посилання або скрипти в описі)
                         const rawContent = item.contentSnippet || item.content || "";
                         const cleanContent = rawContent.replace(/<[^>]*>?/gm, '').substring(0, 400);
 
                         news.push({
-                            id: (Date.now() + Math.floor(Math.random() * 1000)).toString(),
+                            // Робимо ID числовим для сортування
+                            id: Date.now() + Math.floor(Math.random() * 1000),
                             date: new Date(item.pubDate || Date.now()).toLocaleString('uk-UA', { timeZone: 'Europe/Berlin' }),
                             title: item.title.trim(),
                             category: source.name,
@@ -91,33 +98,42 @@ async function autoFetchNews() {
                         addedCount++;
                     }
                 });
-            } catch (feedErr) {
-                console.error(`Помилка джерела ${source.name}:`, feedErr.message);
+            } catch (err) {
+                console.error(`❌ Помилка джерела ${source.name}: ${err.message}`);
             }
         }
 
         if (addedCount > 0) {
-            const finalNews = news.slice(-100); 
+            // Сортуємо: свіжі (більший ID) зверху
+            news.sort((a, b) => b.id - a.id);
+            const finalNews = news.slice(0, 100);
             fs.writeFileSync(NEWS_FILE, JSON.stringify(finalNews, null, 2));
-            console.log(`✅ Грабер: додано ${addedCount} статей.`);
-        } else {
-            console.log("ℹ️ Нових новин не знайдено.");
+            console.log(`✅ Додано ${addedCount} нових статей.`);
         }
-    } catch (err) { console.error("❌ Критична помилка грабера:", err.message); }
+    } catch (err) { console.error("❌ Помилка грабера:", err.message); }
 }
 
-// Запуск грабера кожні 3 години + перший запуск через 15 сек
 setInterval(autoFetchNews, 3 * 60 * 60 * 1000);
-setTimeout(autoFetchNews, 15000);
+setTimeout(autoFetchNews, 10000);
 
 // --- МАРШРУТИ ---
 
-// Захист від сканерів
+// Отримання новин з правильним сортуванням
+app.get("/api/news", (req, res) => {
+    try {
+        const data = fs.readFileSync(NEWS_FILE, "utf-8");
+        let news = JSON.parse(data || "[]");
+        // Подвійна перевірка сортування перед відправкою
+        news.sort((a, b) => b.id - a.id);
+        res.json(news);
+    } catch (err) { res.status(500).send("Error"); }
+});
+
 app.use((req, res, next) => {
     const suspicious = ['.env', '.php', 'wp-admin', 'setup'];
     if (suspicious.some(p => req.url.toLowerCase().includes(p))) {
         const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress;
-        logSecurity("SCANNER", ip, `Сканування шляху: ${req.url}`);
+        logSecurity("SCANNER", ip, `Шукав: ${req.url}`);
     }
     next();
 });
@@ -129,14 +145,13 @@ app.use("/uploads", express.static(uploadDir));
 app.use("/api/news", newsRoutes);
 app.use("/api/taxi", taxiRoute);
 
-// Авторизація
 app.post('/api/admin/login', (req, res) => {
     const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress;
     const { pass } = req.body;
     const now = Date.now();
 
     if (ADMIN_BLOCKED.has(ip) && now < ADMIN_BLOCKED.get(ip)) {
-        return res.status(403).json({ error: "Доступ заблоковано. Спробуйте пізніше." });
+        return res.status(403).json({ error: "Заблоковано." });
     }
 
     if (pass === ADMIN_PASSWORD) {
@@ -150,13 +165,12 @@ app.post('/api/admin/login', (req, res) => {
 
         if (attempts >= MAX_ADMIN_ATTEMPTS) {
             ADMIN_BLOCKED.set(ip, now + ADMIN_BLOCK_TIME);
-            logSecurity("BLOCK", ip, "IP АВТОМАТИЧНО ЗАБАНЕНО 🚫");
+            logSecurity("BLOCK", ip, "IP ЗАБАНЕНО 🚫");
         }
         return res.status(401).json({ error: "Невірний пароль" });
     }
 });
 
-// Сторінки
 app.get("/admin", (req, res) => res.sendFile(path.join(__dirname, "public", "admin.html")));
 app.get("/admin-taxi", (req, res) => res.sendFile(path.join(__dirname, "public", "admin-taxi.html")));
 app.get("*", (req, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
@@ -164,11 +178,7 @@ app.get("*", (req, res) => res.sendFile(path.join(__dirname, "public", "index.ht
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`--- ПОРТАЛ LIVE ДРЕЗДЕН АКТИВНИЙ ---`);
-    
-    // Самопінг для запобігання сну Render
     setInterval(() => {
-        https.get("https://news2-9mlo.onrender.com/", (res) => {
-            if(res.statusCode === 200) console.log("СЕРВЕР ПРАЦЮЄ (PING OK)");
-        }).on("error", () => {});
+        https.get("https://news2-9mlo.onrender.com/", (res) => {}).on("error", () => {});
     }, 10 * 60 * 1000); 
 });
