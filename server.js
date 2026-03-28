@@ -41,15 +41,20 @@ app.use("/api/", apiLimiter);
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 if (!fs.existsSync(NEWS_FILE)) fs.writeFileSync(NEWS_FILE, JSON.stringify([]));
 
-// --- СИСТЕМА СПОВІЩЕНЬ ---
+// --- СИСТЕМА СПОВІЩЕНЬ (З ЛОГУВАННЯМ ПОМИЛОК) ---
 const sendToTg = async (msg, type = "INFO") => {
+    const icons = { INFO: "ℹ️", WARN: "⚠️", ALERT: "🚨", SUCCESS: "✅" };
     try {
         await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
             chat_id: CHAT_ID,
-            text: `<b>[${type}]</b>\n${msg}`,
+            text: `${icons[type] || "🔔"} <b>ПОРТАЛ LIVE:</b>\n${msg}`,
             parse_mode: "HTML"
         });
-    } catch (e) {}
+        console.log(`✅ TG Notification [${type}] sent`);
+    } catch (e) {
+        // Якщо Телеграм не працює — ми побачимо причину в логах Render
+        console.error("❌ TG ERROR:", e.response ? e.response.data : e.message);
+    }
 };
 
 // --- ДЖЕРЕЛА НОВИН ---
@@ -62,9 +67,8 @@ const RSS_SOURCES = [
     { name: "Радіо Свобода", url: "https://www.radiosvoboda.org/api/z-rq-v-iy-t", translate: false }
 ];
 
-// --- ГРАБЕР (ПОКРАЩЕНИЙ) ---
 async function autoFetchNews() {
-    console.log("🔄 Початок оновлення бази новин...");
+    console.log("🔄 Оновлення новин...");
     try {
         const fileData = fs.readFileSync(NEWS_FILE, "utf-8");
         let news = JSON.parse(fileData || "[]");
@@ -72,41 +76,27 @@ async function autoFetchNews() {
 
         for (const source of RSS_SOURCES) {
             try {
-                console.log(`📡 Запитую: ${source.name}`);
                 const response = await axios.get(source.url, { 
                     timeout: 20000, 
-                    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36' } 
+                    headers: { 'User-Agent': 'Mozilla/5.0' } 
                 });
                 const feed = await parser.parseString(response.data);
 
                 for (const item of feed.items) {
                     if (!news.some(n => n.title === item.title)) {
-                        
                         let titleUA = item.title.trim();
                         let contentRaw = (item.contentSnippet || item.content || "").replace(/<[^>]*>?/gm, '').trim();
-
-                        // Виправляємо дату: беремо час публікації
                         const pubDate = item.pubDate ? new Date(item.pubDate) : new Date();
-                        const newsId = pubDate.getTime() + Math.floor(Math.random() * 1000);
 
-                        // Переклад
                         if (source.translate && titleUA) {
                             try {
-                                const tr = await translate([titleUA, contentRaw], { 
-                                    from: 'de', 
-                                    to: 'uk'
-                                });
-                                if (tr && tr.length >= 2) {
-                                    titleUA = tr[0]; 
-                                    contentRaw = tr[1];
-                                }
-                            } catch (e) { 
-                                console.error(`⚠️ Помилка перекладу для ${source.name}. Лишаю оригінал.`); 
-                            }
+                                const tr = await translate([titleUA, contentRaw], { from: 'de', to: 'uk' });
+                                if (tr && tr.length >= 2) { titleUA = tr[0]; contentRaw = tr[1]; }
+                            } catch (e) {}
                         }
 
                         news.push({
-                            id: newsId,
+                            id: pubDate.getTime() + Math.floor(Math.random() * 1000),
                             date: pubDate.toLocaleString('uk-UA', { timeZone: 'Europe/Berlin' }),
                             title: titleUA,
                             category: source.name,
@@ -115,22 +105,16 @@ async function autoFetchNews() {
                             link: item.link
                         });
                         addedCount++;
-                        
-                        // Затримка для Google Translate
                         await new Promise(r => setTimeout(r, 800));
                     }
                 }
-            } catch (err) { console.error(`❌ Помилка джерела ${source.name}: ${err.message}`); }
+            } catch (err) {}
         }
 
         if (addedCount > 0) {
-            // Математичне сортування: нові зверху
             news.sort((a, b) => Number(b.id) - Number(a.id));
-            
-            // Очищення старих (старше 10 днів)
             const tenDaysAgo = Date.now() - (10 * 24 * 60 * 60 * 1000);
             const finalNews = news.filter(n => n.id > tenDaysAgo).slice(0, 100);
-
             fs.writeFileSync(NEWS_FILE, JSON.stringify(finalNews, null, 2));
             console.log(`✅ Додано новин: ${addedCount}`);
         }
@@ -158,10 +142,29 @@ app.get("/api/news", (req, res) => {
     } catch (err) { res.status(500).send("Error"); }
 });
 
+// 🛡️ ЗАХИСТ ВІД СКАНЕРІВ (Додано виклик ТГ)
+app.use((req, res, next) => {
+    const badPaths = ['.env', '.php', 'wp-admin', 'config', 'setup'];
+    if (badPaths.some(p => req.url.toLowerCase().includes(p))) {
+        const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+        sendToTg(`🧨 <b>БЛОКУВАННЯ:</b> Спроба сканування <code>${req.url}</code>\nIP: <code>${ip}</code>`, "ALERT");
+        return res.status(403).send("Access Denied");
+    }
+    next();
+});
+
+// 🔓 ВХІД В АДМІНКУ (Додано виклик ТГ)
 app.post('/api/admin/login', (req, res) => {
     const { pass } = req.body;
-    if (pass === ADMIN_PASSWORD) return res.json({ success: true });
-    return res.status(401).json({ error: "Error" });
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+
+    if (pass === ADMIN_PASSWORD) {
+        sendToTg(`✅ Успішний вхід в адмінку!\nIP: <code>${ip}</code>`, "SUCCESS");
+        return res.json({ success: true });
+    } else {
+        sendToTg(`🧨 Невдала спроба входу!\nIP: <code>${ip}</code>\nПароль: <code>${pass}</code>`, "ALERT");
+        return res.status(401).json({ error: "Error" });
+    }
 });
 
 app.use(express.static(path.join(__dirname, "public")));
@@ -175,7 +178,5 @@ app.get("*", (req, res) => res.sendFile(path.join(__dirname, "public", "index.ht
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`--- ПОРТАЛ LIVE ДРЕЗДЕН АКТИВНИЙ ---`);
-    setInterval(() => {
-        https.get("https://news2-9mlo.onrender.com/", (res) => {}).on("error", () => {});
-    }, 10 * 60 * 1000); 
+    sendToTg("🚀 Сервер успішно запущений та готовий до роботи!", "INFO");
 });
