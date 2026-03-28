@@ -31,6 +31,7 @@ app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors());
 app.use(express.json());
 
+// 1. Загальний лімітер для всього сайту
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 200, 
@@ -38,10 +39,19 @@ const apiLimiter = rateLimit({
 });
 app.use("/api/", apiLimiter);
 
+// 2. СУВОРИЙ лімітер для логіну (5 спроб) - ЗАХИСТ ВІД БРУТФОРСУ
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5, 
+    message: { error: "Забагато спроб! Доступ заблоковано на 15 хвилин." },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 if (!fs.existsSync(NEWS_FILE)) fs.writeFileSync(NEWS_FILE, JSON.stringify([]));
 
-// --- СИСТЕМА СПОВІЩЕНЬ (З ЛОГУВАННЯМ ПОМИЛОК) ---
+// --- СИСТЕМА СПОВІЩЕНЬ ---
 const sendToTg = async (msg, type = "INFO") => {
     const icons = { INFO: "ℹ️", WARN: "⚠️", ALERT: "🚨", SUCCESS: "✅" };
     try {
@@ -50,9 +60,7 @@ const sendToTg = async (msg, type = "INFO") => {
             text: `${icons[type] || "🔔"} <b>ПОРТАЛ LIVE:</b>\n${msg}`,
             parse_mode: "HTML"
         });
-        console.log(`✅ TG Notification [${type}] sent`);
     } catch (e) {
-        // Якщо Телеграм не працює — ми побачимо причину в логах Render
         console.error("❌ TG ERROR:", e.response ? e.response.data : e.message);
     }
 };
@@ -68,7 +76,7 @@ const RSS_SOURCES = [
 ];
 
 async function autoFetchNews() {
-    console.log("🔄 Оновлення новин...");
+    console.log("🔄 Оновлення бази новин...");
     try {
         const fileData = fs.readFileSync(NEWS_FILE, "utf-8");
         let news = JSON.parse(fileData || "[]");
@@ -78,7 +86,7 @@ async function autoFetchNews() {
             try {
                 const response = await axios.get(source.url, { 
                     timeout: 20000, 
-                    headers: { 'User-Agent': 'Mozilla/5.0' } 
+                    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36' } 
                 });
                 const feed = await parser.parseString(response.data);
 
@@ -108,7 +116,7 @@ async function autoFetchNews() {
                         await new Promise(r => setTimeout(r, 800));
                     }
                 }
-            } catch (err) {}
+            } catch (err) { console.error(`❌ Помилка ${source.name}`); }
         }
 
         if (addedCount > 0) {
@@ -142,7 +150,7 @@ app.get("/api/news", (req, res) => {
     } catch (err) { res.status(500).send("Error"); }
 });
 
-// 🛡️ ЗАХИСТ ВІД СКАНЕРІВ (Додано виклик ТГ)
+// Захист від сканерів
 app.use((req, res, next) => {
     const badPaths = ['.env', '.php', 'wp-admin', 'config', 'setup'];
     if (badPaths.some(p => req.url.toLowerCase().includes(p))) {
@@ -153,8 +161,8 @@ app.use((req, res, next) => {
     next();
 });
 
-// 🔓 ВХІД В АДМІНКУ (Додано виклик ТГ)
-app.post('/api/admin/login', (req, res) => {
+// Застосовуємо суворий лімітер до маршрутів входу
+app.post('/api/admin/login', loginLimiter, (req, res) => {
     const { pass } = req.body;
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
 
@@ -167,6 +175,9 @@ app.post('/api/admin/login', (req, res) => {
     }
 });
 
+// Захищаємо також вхід у таксі-адмінку
+app.post('/api/taxi/admin', loginLimiter); 
+
 app.use(express.static(path.join(__dirname, "public")));
 app.use(express.static(path.join(__dirname, "assets")));
 app.use("/uploads", express.static(uploadDir));
@@ -178,5 +189,5 @@ app.get("*", (req, res) => res.sendFile(path.join(__dirname, "public", "index.ht
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`--- ПОРТАЛ LIVE ДРЕЗДЕН АКТИВНИЙ ---`);
-    sendToTg("🚀 Сервер успішно запущений та готовий до роботи!", "INFO");
+    sendToTg("🚀 Сервер успішно запущений!", "INFO");
 });
