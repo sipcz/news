@@ -41,7 +41,7 @@ app.use("/api/", apiLimiter);
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 if (!fs.existsSync(NEWS_FILE)) fs.writeFileSync(NEWS_FILE, JSON.stringify([]));
 
-// --- ТЕЛЕГРАМ-ЛОГУВАННЯ ---
+// --- СИСТЕМА СПОВІЩЕНЬ ---
 const sendToTg = async (msg, type = "INFO") => {
     try {
         await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
@@ -52,8 +52,9 @@ const sendToTg = async (msg, type = "INFO") => {
     } catch (e) {}
 };
 
-// --- ДЖЕРЕЛА ---
+// --- ДЖЕРЕЛА НОВИН ---
 const RSS_SOURCES = [
+    { name: "ТСН Україна", url: "https://tsn.ua/rss/full.rss", translate: false },
     { name: "DW Німеччина", url: "https://rss.dw.com/xml/rss-ukr-all", translate: false },
     { name: "Дрезден Офіційно", url: "https://www.dresden.de/rss/de/presseservice.xml", translate: true },
     { name: "MDR Саксонія", url: "https://www.mdr.de/nachrichten/sachsen/index-rss.xml", translate: true },
@@ -61,7 +62,7 @@ const RSS_SOURCES = [
     { name: "Радіо Свобода", url: "https://www.radiosvoboda.org/api/z-rq-v-iy-t", translate: false }
 ];
 
-// --- ГРАБЕР (FIXED) ---
+// --- ГРАБЕР (ПОКРАЩЕНИЙ) ---
 async function autoFetchNews() {
     console.log("🔄 Початок оновлення бази новин...");
     try {
@@ -71,67 +72,68 @@ async function autoFetchNews() {
 
         for (const source of RSS_SOURCES) {
             try {
-                // Використовуємо потужні заголовки для обходу блокувань
+                console.log(`📡 Запитую: ${source.name}`);
                 const response = await axios.get(source.url, { 
-                    timeout: 15000, 
-                    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/122.0.0.0' } 
+                    timeout: 20000, 
+                    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36' } 
                 });
                 const feed = await parser.parseString(response.data);
 
                 for (const item of feed.items) {
                     if (!news.some(n => n.title === item.title)) {
                         
-                        let titleUA = item.title;
-                        let contentRaw = (item.contentSnippet || item.content || "").replace(/<[^>]*>?/gm, '');
+                        let titleUA = item.title.trim();
+                        let contentRaw = (item.contentSnippet || item.content || "").replace(/<[^>]*>?/gm, '').trim();
 
-                        // 🛠️ FIX 1: Реальна дата публікації замість часу завантаження
+                        // Виправляємо дату: беремо час публікації
                         const pubDate = item.pubDate ? new Date(item.pubDate) : new Date();
                         const newsId = pubDate.getTime() + Math.floor(Math.random() * 1000);
 
-                        // 🛠️ FIX 2: Примусовий переклад з німецької ('de')
-                        if (source.translate) {
+                        // Переклад
+                        if (source.translate && titleUA) {
                             try {
-                                console.log(`🤖 Перекладаю для: ${source.name}`);
                                 const tr = await translate([titleUA, contentRaw], { 
                                     from: 'de', 
-                                    to: 'uk',
-                                    tld: 'de' // Використовуємо німецький домен Google для стабільності
+                                    to: 'uk'
                                 });
-                                titleUA = tr[0]; 
-                                contentRaw = tr[1];
+                                if (tr && tr.length >= 2) {
+                                    titleUA = tr[0]; 
+                                    contentRaw = tr[1];
+                                }
                             } catch (e) { 
-                                console.error(`Помилка перекладу ${source.name}:`, e.message); 
+                                console.error(`⚠️ Помилка перекладу для ${source.name}. Лишаю оригінал.`); 
                             }
                         }
 
                         news.push({
-                            id: newsId, // Тепер ID — це реальний час публікації
+                            id: newsId,
                             date: pubDate.toLocaleString('uk-UA', { timeZone: 'Europe/Berlin' }),
-                            title: titleUA.trim(),
+                            title: titleUA,
                             category: source.name,
                             img: "assets/img/auto-news.jpg",
-                            content: contentRaw.substring(0, 450) + "...",
+                            content: contentRaw.substring(0, 500) + "...",
                             link: item.link
                         });
                         addedCount++;
                         
-                        // Пауза 0.5с між новинами, щоб Google не забанив
-                        await new Promise(r => setTimeout(r, 500));
+                        // Затримка для Google Translate
+                        await new Promise(r => setTimeout(r, 800));
                     }
                 }
-            } catch (err) { console.error(`❌ Помилка ${source.name}`); }
+            } catch (err) { console.error(`❌ Помилка джерела ${source.name}: ${err.message}`); }
         }
 
-        // 🧹 ОЧИЩЕННЯ: Видаляємо старе і сортуємо по-справжньому
-        const tenDaysAgo = Date.now() - (10 * 24 * 60 * 60 * 1000);
-        let finalNews = news.filter(n => n.id > tenDaysAgo);
-        
-        // Сортуємо математично: найбільший timestamp (найновіша новина) йде першим
-        finalNews.sort((a, b) => Number(b.id) - Number(a.id));
+        if (addedCount > 0) {
+            // Математичне сортування: нові зверху
+            news.sort((a, b) => Number(b.id) - Number(a.id));
+            
+            // Очищення старих (старше 10 днів)
+            const tenDaysAgo = Date.now() - (10 * 24 * 60 * 60 * 1000);
+            const finalNews = news.filter(n => n.id > tenDaysAgo).slice(0, 100);
 
-        fs.writeFileSync(NEWS_FILE, JSON.stringify(finalNews.slice(0, 100), null, 2));
-        if (addedCount > 0) console.log(`✅ Додано ${addedCount} новин.`);
-        
+            fs.writeFileSync(NEWS_FILE, JSON.stringify(finalNews, null, 2));
+            console.log(`✅ Додано новин: ${addedCount}`);
+        }
     } catch (err) { console.error("Помилка грабера."); }
 }
 
@@ -151,19 +153,9 @@ app.get("/api/weather", async (req, res) => {
 app.get("/api/news", (req, res) => {
     try {
         let news = JSON.parse(fs.readFileSync(NEWS_FILE, "utf-8") || "[]");
-        // Подвійне сортування на видачі для надійності
         news.sort((a, b) => Number(b.id) - Number(a.id));
         res.json(news);
     } catch (err) { res.status(500).send("Error"); }
-});
-
-// Захист від сканерів
-app.use((req, res, next) => {
-    const bad = ['.env', '.php', 'wp-admin', 'config'];
-    if (bad.some(p => req.url.toLowerCase().includes(p))) {
-        return res.status(403).send("Forbidden");
-    }
-    next();
 });
 
 app.post('/api/admin/login', (req, res) => {
