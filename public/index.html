@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>НОВИНИ LIVE — Твій сервер у Дрездені</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        :root {
+            --bg: #000;
+            --text: #fff;
+            --accent: #d4af37;
+            --card-bg: rgba(255, 255, 255, 0.08);
+            --border: rgba(212, 175, 55, 0.3);
+        }
+
+        .light-theme {
+            --bg: #f5f5f5;
+            --text: #111;
+            --accent: #b8860b;
+            --card-bg: rgba(0, 0, 0, 0.05);
+            --border: rgba(184, 134, 11, 0.3);
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', Arial, sans-serif;
+            transition: 0.4s;
+            overflow-x: hidden;
+        }
+
+        /* Відео-фон */
+        .video-bg {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; overflow: hidden;
+        }
+        .video-bg video {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            filter: brightness(0.4);
+        }
+
+        /* Header */
+        header {
+            padding: 80px 20px;
+            text-align: center;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent);
+        }
+        header h1 {
+            font-size: 3.5rem;
+            margin: 0;
+            letter-spacing: 6px;
+            color: var(--accent);
+            text-transform: uppercase;
+            text-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+        }
+
+        /* Сітка новин */
+        .news-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 30px;
+            padding: 40px 10%;
+        }
+
+        .news-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .news-card:hover {
+            transform: translateY(-10px);
+            border-color: var(--accent);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .news-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+        .news-info { padding: 20px; }
+        .news-tag { color: var(--accent); font-size: 11px; font-weight: bold; text-transform: uppercase; }
+        .news-title { font-size: 1.4rem; margin: 10px 0; line-height: 1.3; }
+
+        /* Модальне вікно для тексту */
+        #newsModal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 999;
+            overflow-y: auto;
+            padding: 40px 15px;
+        }
+        .modal-content { max-width: 800px; margin: auto; }
+        .close-btn { float: right; color: var(--accent); font-size: 40px; cursor: pointer; }
+
+        /* Контактна форма з Honeypot */
+        .contact-section {
+            background: var(--card-bg);
+            margin: 50px 10%;
+            padding: 40px;
+            border-radius: 25px;
+            border: 1px solid var(--border);
+        }
+        input, textarea {
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            color: #fff;
+            border-radius: 10px;
+        }
+        .hp-field { display: none !important; } /* Пастка для ботів */
+
+        button {
+            background: var(--accent);
+            color: #000;
+            border: none;
+            padding: 15px 30px;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="video-bg">
+        <video autoplay muted loop playsinline>
+            <source src="assets/video/video.mp4" type="video/mp4">
+        </video>
+    </div>
+
+    <header>
+        <h1 id="main-title">Новини LIVE</h1>
+        <p>Оперативні події з твого власного сервера</p>
+    </header>
+
+    <div class="news-grid" id="newsGrid">
+        </div>
+
+    <div id="newsModal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeNews()">&times;</span>
+            <img id="mImg" style="width:100%; border-radius:15px; margin-bottom:20px;">
+            <h1 id="mTitle" style="color:var(--accent);"></h1>
+            <p id="mDate" style="color:#888;"></p>
+            <div id="mText" style="line-height:1.8; font-size:1.1rem; white-space: pre-wrap;"></div>
+        </div>
+    </div>
+
+    <section class="contact-section">
+        <h2 style="text-align:center;">Зворотний зв'язок</h2>
+        <form id="contactForm">
+            <input type="text" name="hp_name" class="hp-field" tabindex="-1" autocomplete="off">
+            
+            <input type="text" name="userName" placeholder="Ваше ім'я" required>
+            <input type="email" name="userEmail" placeholder="Ваш Email" required>
+            <textarea name="message" rows="5" placeholder="Ваше повідомлення..."></textarea>
+            
+            <div style="margin:10px 0; background:rgba(255,255,255,0.1); padding:10px; border-radius:8px; text-align:center;">
+                Код перевірки: <span id="bot-letters" style="color:var(--accent); font-weight:bold; letter-spacing:3px;"></span>
+                <input type="text" name="captcha" placeholder="Введіть код сюди" required style="width:150px; margin-left:10px;">
+            </div>
+            
+            <button type="submit">Надіслати повідомлення</button>
+            <p id="formStatus" style="text-align:center; margin-top:10px;"></p>
+        </form>
+    </section>
+
+    <script>
+        // 1. ЗАВАНТАЖЕННЯ НОВИН
+        async function loadNews() {
+            try {
+                const res = await fetch('/api/news');
+                const news = await res.json();
+                const grid = document.getElementById('newsGrid');
+                
+                grid.innerHTML = news.map(n => `
+                    <div class="news-card" onclick="openNews('${encodeURIComponent(JSON.stringify(n))}')">
+                        <img src="${n.img || 'assets/img/news-placeholder.jpg'}">
+                        <div class="news-info">
+                            <span class="news-tag">${n.category}</span>
+                            <div class="news-title">${n.title}</div>
+                            <div class="news-date">${n.date}</div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch(e) { console.log("Помилка завантаження новин"); }
+        }
+
+        // 2. МОДАЛЬНЕ ВІКНО
+        function openNews(data) {
+            const n = JSON.parse(decodeURIComponent(data));
+            document.getElementById('mImg').src = n.img;
+            document.getElementById('mTitle').innerText = n.title;
+            document.getElementById('mDate').innerText = n.date;
+            document.getElementById('mText').innerText = n.content;
+            document.getElementById('newsModal').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeNews() {
+            document.getElementById('newsModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        // 3. ЗАХИСТ ВІД БОТІВ (CAPTCHA + HONEYPOT)
+        const form = document.getElementById('contactForm');
+        let currentCode = "";
+
+        function generateCaptcha() {
+            currentCode = Math.random().toString(36).substring(2, 6).toUpperCase();
+            document.getElementById('bot-letters').innerText = currentCode;
+        }
+
+        form.onsubmit = async (e) => {
+            e.preventDefault();
+            const status = document.getElementById('formStatus');
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+
+            // Перевірка Honeypot (якщо заповнено - це бот)
+            if (data.hp_name) {
+                console.warn("Бот виявлений!");
+                return;
+            }
+
+            // Перевірка Captcha
+            if (data.captcha.toUpperCase() !== currentCode) {
+                status.style.color = "red";
+                status.innerText = "Невірний код перевірки!";
+                generateCaptcha();
+                return;
+            }
+
+            status.innerText = "Надсилання...";
+            // Тут відправка на твій API (наприклад, taxi.js або новий news-contact.js)
+            status.style.color = "var(--accent)";
+            status.innerText = "Повідомлення успішно надіслано!";
+            form.reset();
+            generateCaptcha();
+        };
+
+        // Запуск
+        generateCaptcha();
+        loadNews();
+    </script>
+</body>
+</html>

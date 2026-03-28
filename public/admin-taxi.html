@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Адмін — Таксі LIVE</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        :root {
+            --bg: #000;
+            --text: #fff;
+            --accent: #d4af37;
+            --card-bg: rgba(255, 255, 255, 0.07);
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+
+        .video-bg {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; overflow: hidden;
+        }
+        .video-bg video {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            filter: brightness(0.3);
+        }
+
+        nav {
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            border-bottom: 1px solid var(--accent);
+        }
+
+        nav a { color: #fff; text-decoration: none; font-weight: bold; }
+        nav a:hover { color: var(--accent); }
+
+        .container { max-width: 900px; margin: 80px auto; padding: 20px; }
+        
+        .taxi-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(15px);
+            margin-bottom: 20px;
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .taxi-card:hover { border-color: var(--accent); }
+
+        button {
+            background: #ff4444;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="video-bg">
+        <video autoplay muted loop playsinline>
+            <source src="assets/video/video.mp4" type="video/mp4">
+        </video>
+    </div>
+
+    <nav>
+        <a href="/">На сайт</a>
+        <a href="/admin">Новини</a> <a href="/admin-taxi" style="color:var(--accent);">Таксі</a>
+    </nav>
+
+    <div class="container">
+        <h2 style="color:var(--accent);">Замовлення таксі</h2>
+        <div id="taxiList"></div>
+    </div>
+
+    <script>
+        // Беремо пароль, який ми ввели в адмінці новин
+        const CURRENT_PASS = localStorage.getItem("adminPass") || "";
+
+        async function loadTaxi() {
+            const res = await fetch("/api/taxi/admin", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ pass: CURRENT_PASS })
+            });
+
+            if (!res.ok) {
+                const pass = prompt("Введіть пароль адміна:");
+                localStorage.setItem("adminPass", pass);
+                location.reload();
+                return;
+            }
+
+            const data = await res.json();
+            const list = document.getElementById("taxiList");
+            list.innerHTML = data.reverse().map(item => `
+                <div class="taxi-card">
+                    <div style="color:var(--accent); font-weight:bold;">${item.time || 'Нове замовлення'}</div>
+                    <p><strong>Ім'я:</strong> ${item.name}</p>
+                    <p><strong>Телефон:</strong> ${item.phone}</p>
+                    <p><strong>Адреса:</strong> ${item.address}</p>
+                    <p><strong>Коментар:</strong> ${item.comment || '-'}</p>
+                    <button onclick="deleteOrder('${item.id}')">Видалити</button>
+                </div>
+            `).join('');
+        }
+
+        async function deleteOrder(id) {
+            if (!confirm("Видалити замовлення?")) return;
+            const res = await fetch("/api/taxi/delete", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ pass: CURRENT_PASS, id: id })
+            });
+            if (res.ok) loadTaxi();
+        }
+
+        loadTaxi();
+    </script>
+</body>
+</html>
