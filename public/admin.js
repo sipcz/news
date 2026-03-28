@@ -2,7 +2,7 @@ console.log("ADMIN NEWS JS LOADED");
 
 let CURRENT_PASS = ""; // Зберігаємо пароль для подальших запитів
 
-// 1. ВХІД В АДМІНКУ
+// 1. ВХІД В АДМІНКУ (Залишається JSON, бо тут тільки текст)
 async function login() {
     const password = document.getElementById("adminPass").value;
 
@@ -10,17 +10,17 @@ async function login() {
         const res = await fetch("/api/admin/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ pass: password }) //
+            body: JSON.stringify({ pass: password })
         });
 
         if (res.ok) {
             CURRENT_PASS = password;
             document.getElementById("loginBox").style.display = "none";
             document.getElementById("adminPanel").style.display = "block";
-            loadNews(); // Завантажуємо новини після входу
+            loadNews();
         } else {
             const err = await res.json();
-            alert(err.error || "Невірний пароль"); //
+            alert(err.error || "Невірний пароль");
         }
     } catch (e) {
         alert("Помилка з'єднання з сервером");
@@ -29,7 +29,7 @@ async function login() {
 
 // 2. ЗАВАНТАЖЕННЯ СПИСКУ НОВИН
 async function loadNews() {
-    const res = await fetch("/api/news"); //
+    const res = await fetch("/api/news");
     if (!res.ok) return;
 
     const news = await res.json();
@@ -41,49 +41,64 @@ async function loadNews() {
         div.className = "news-item";
         div.innerHTML = `
             <img src="${n.img || 'https://via.placeholder.com/150'}" style="width:100%; height:120px; object-fit:cover; border-radius:8px;">
-            <div style="margin: 10px 0; font-weight: bold;">${n.title}</div>
+            <div style="margin: 10px 0; font-weight: bold; font-size: 14px;">${n.title}</div>
             <div style="font-size: 12px; color: #d4af37;">${n.category}</div>
-            <button onclick="deleteNews('${n.id}')" style="background:#ff4444; margin-top:10px;">Видалити</button>
+            <button onclick="deleteNews('${n.id}')" style="background:#ff4444; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; margin-top:10px; width: 100%;">Видалити</button>
         `;
         list.appendChild(div);
     });
 }
 
-// 3. ДОДАВАННЯ НОВИНИ (З ЗАХИСТОМ ВІД БОТІВ)
+// 3. 🔥 ДОДАВАННЯ НОВИНИ (ТЕПЕР З ПІДТРИМКОЮ ФАЙЛІВ)
 async function addNews() {
-    // 🛡️ Перевірка "Медової пастки" (Honeypot)
+    // 🛡️ Перевірка "Медової пастки"
     const botTrap = document.getElementById("admin_bot_trap").value;
-    if (botTrap !== "") {
-        console.warn("Bot detected!");
-        return; 
-    }
+    if (botTrap !== "") return;
 
-    const article = {
-        title: document.getElementById("newsTitle").value,
-        category: document.getElementById("newsCategory").value,
-        img: document.getElementById("newsImg").value,
-        content: document.getElementById("newsContent").value
-    };
+    const title = document.getElementById("newsTitle").value;
+    const category = document.getElementById("newsCategory").value;
+    const content = document.getElementById("newsContent").value;
+    // Отримуємо файл з інпуту
+    const imageInput = document.getElementById("newsImageInput"); 
+    const imageFile = imageInput.files[0];
 
-    if (!article.title || !article.content) {
-        alert("Будь ласка, заповніть заголовок та текст!");
+    if (!title || !content) {
+        alert("Заповніть заголовок та текст!");
         return;
     }
 
-    const res = await fetch("/api/news/add", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pass: CURRENT_PASS, article })
-    });
+    // Створюємо FormData замість звичайного об'єкта
+    const formData = new FormData();
+    formData.append("pass", CURRENT_PASS); // Пароль для перевірки
+    formData.append("title", title);
+    formData.append("category", category);
+    formData.append("content", content);
+    
+    // Якщо файл вибрано — додаємо його в "конверт"
+    if (imageFile) {
+        formData.append("image", imageFile);
+    }
 
-    if (res.ok) {
-        // Очищаємо поля
-        document.getElementById("newsTitle").value = "";
-        document.getElementById("newsContent").value = "";
-        loadNews();
-        alert("Новину опубліковано!");
-    } else {
-        alert("Помилка публікації");
+    try {
+        const res = await fetch("/api/news/add", {
+            method: "POST",
+            // ВАЖЛИВО: для FormData заголовки Content-Type ставити НЕ МОЖНА!
+            body: formData 
+        });
+
+        if (res.ok) {
+            // Очищаємо поля
+            document.getElementById("newsTitle").value = "";
+            document.getElementById("newsContent").value = "";
+            imageInput.value = ""; // Очищаємо вибір файлу
+            loadNews();
+            alert("Новину опубліковано!");
+        } else {
+            const err = await res.json();
+            alert(err.error || "Помилка публікації");
+        }
+    } catch (e) {
+        alert("Помилка при відправці файлу");
     }
 }
 
