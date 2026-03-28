@@ -2,130 +2,210 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <title>Адмін — Таксі LIVE</title>
+    <title>Адмін — Замовлення Таксі</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         :root {
-            --bg: #000;
-            --text: #fff;
+            --ua-blue: #0057b7;
+            --ua-yellow: #ffd700;
+            --de-black: #1a1a1a;
             --accent: #d4af37;
-            --card-bg: rgba(255, 255, 255, 0.07);
+            --bg: #f0f2f5;
+            --card-bg: #ffffff;
+            --border: #d1d9e0;
         }
 
         body {
             margin: 0;
             background: var(--bg);
-            color: var(--text);
-            font-family: 'Segoe UI', Arial, sans-serif;
+            color: var(--de-black);
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
         }
 
-        .video-bg {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -1; overflow: hidden;
-        }
-        .video-bg video {
-            width: 100%; height: 100%;
-            object-fit: cover;
-            filter: brightness(0.3);
-        }
-
+        /* Навігація */
         nav {
-            background: rgba(0,0,0,0.8);
-            padding: 15px;
+            background: #fff;
+            border-top: 4px solid var(--ua-blue);
+            border-bottom: 2px solid var(--ua-yellow);
+            padding: 12px 5%;
             display: flex;
-            justify-content: center;
-            gap: 20px;
-            border-bottom: 1px solid var(--accent);
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0; z-index: 100;
         }
 
-        nav a { color: #fff; text-decoration: none; font-weight: bold; }
-        nav a:hover { color: var(--accent); }
+        nav a { text-decoration: none; color: #555; font-weight: bold; font-size: 14px; margin-left: 20px; }
+        nav a.active { color: var(--ua-blue); border-bottom: 2px solid var(--ua-blue); }
 
-        .container { max-width: 900px; margin: 80px auto; padding: 20px; }
+        .container { max-width: 900px; margin: 30px auto; padding: 0 15px; }
+
+        /* Логін */
+        #loginBox { max-width: 400px; margin: 100px auto; background: #fff; padding: 30px; border-radius: 15px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; }
+        
+        /* Кнопки */
+        .btn { background: var(--de-black); color: var(--ua-yellow); border: none; padding: 12px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; width: 100%; }
+        .btn:hover { background: var(--ua-blue); color: #fff; }
+
+        /* Картки замовлень */
+        .taxi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
         
         .taxi-card {
-            background: var(--card-bg);
-            backdrop-filter: blur(15px);
-            margin-bottom: 20px;
+            background: #fff;
+            border-radius: 12px;
+            border: 1px solid var(--border);
             padding: 20px;
-            border-radius: 15px;
-            border: 1px solid rgba(255,255,255,0.1);
+            position: relative;
+            transition: 0.3s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        }
+        .taxi-card:hover { transform: translateY(-3px); border-color: var(--ua-blue); box-shadow: 0 8px 15px rgba(0,0,0,0.08); }
+
+        .time-badge { 
+            display: inline-block; 
+            padding: 4px 8px; 
+            background: #f0f4f8; 
+            color: var(--ua-blue); 
+            border-radius: 6px; 
+            font-size: 12px; 
+            font-weight: bold; 
+            margin-bottom: 15px;
         }
 
-        .taxi-card:hover { border-color: var(--accent); }
+        .taxi-card p { margin: 8px 0; font-size: 14px; color: #444; }
+        .taxi-card b { color: #000; }
 
-        button {
-            background: #ff4444;
-            color: #fff;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
+        .phone-link { color: var(--ua-blue); text-decoration: none; font-weight: bold; }
+
+        .del-btn {
+            background: #fff1f1;
+            color: #ff4d4d;
+            border: 1px solid #ffcccc;
+            width: 100%;
+            padding: 8px;
+            margin-top: 15px;
+            border-radius: 6px;
             cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
         }
+        .del-btn:hover { background: #ff4d4d; color: #fff; }
+
+        #adminPanel { display: none; }
     </style>
 </head>
 <body>
 
-    <div class="video-bg">
-        <video autoplay muted loop playsinline>
-            <source src="assets/video/video.mp4" type="video/mp4">
-        </video>
-    </div>
-
     <nav>
-        <a href="/">На сайт</a>
-        <a href="/admin">Новини</a> <a href="/admin-taxi" style="color:var(--accent);">Таксі</a>
+        <div style="font-weight:900; color: var(--ua-blue);">TAXI <span style="color:var(--de-black)">ADMIN</span></div>
+        <div style="display:flex;">
+            <a href="/">Сайт</a>
+            <a href="/admin">Новини</a>
+            <a href="/admin-taxi" class="active">Замовлення</a>
+        </div>
     </nav>
 
     <div class="container">
-        <h2 style="color:var(--accent);">Замовлення таксі</h2>
-        <div id="taxiList"></div>
+        <div id="loginBox">
+            <h3>Доступ до замовлень</h3>
+            <input type="password" id="adminPass" placeholder="Пароль адміністратора">
+            <button class="btn" onclick="login()">Відкрити базу</button>
+        </div>
+
+        <div id="adminPanel">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2 style="margin:0; font-size: 1.5rem;">Актуальні замовлення</h2>
+                <button onclick="loadTaxi()" style="background:none; border:none; color:var(--ua-blue); cursor:pointer; font-weight:bold;">🔄 Оновити</button>
+            </div>
+            <div class="taxi-grid" id="taxiList"></div>
+        </div>
     </div>
 
     <script>
-        // Беремо пароль, який ми ввели в адмінці новин
-        const CURRENT_PASS = localStorage.getItem("adminPass") || "";
+        let failedAttempts = 0;
 
-        async function loadTaxi() {
+        async function login() {
+            const pass = document.getElementById("adminPass").value;
             const res = await fetch("/api/taxi/admin", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ pass: CURRENT_PASS })
+                body: JSON.stringify({ pass })
+            });
+
+            if (res.ok) {
+                localStorage.setItem("adminPass", pass);
+                document.getElementById("loginBox").style.display = "none";
+                document.getElementById("adminPanel").style.display = "block";
+                loadTaxi();
+            } else {
+                failedAttempts++;
+                if (failedAttempts >= 5) {
+                    document.getElementById("loginBox").innerHTML = "<h3 style='color:red;'>БЛОКУВАННЯ</h3><p>Забагато спроб входу.</p>";
+                } else {
+                    alert("Невірний пароль!");
+                }
+            }
+        }
+
+        async function loadTaxi() {
+            const pass = localStorage.getItem("adminPass");
+            const res = await fetch("/api/taxi/admin", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ pass })
             });
 
             if (!res.ok) {
-                const pass = prompt("Введіть пароль адміна:");
-                localStorage.setItem("adminPass", pass);
+                localStorage.removeItem("adminPass");
                 location.reload();
                 return;
             }
 
             const data = await res.json();
             const list = document.getElementById("taxiList");
-            list.innerHTML = data.reverse().map(item => `
+
+            if (data.length === 0) {
+                list.innerHTML = "<p style='grid-column:1/-1; text-align:center; color:#888;'>Замовлень поки немає.</p>";
+                return;
+            }
+
+            // Рендеримо (дані вже приходять реверсом з бекенду)
+            list.innerHTML = data.map(item => `
                 <div class="taxi-card">
-                    <div style="color:var(--accent); font-weight:bold;">${item.time || 'Нове замовлення'}</div>
-                    <p><strong>Ім'я:</strong> ${item.name}</p>
-                    <p><strong>Телефон:</strong> ${item.phone}</p>
-                    <p><strong>Адреса:</strong> ${item.address}</p>
-                    <p><strong>Коментар:</strong> ${item.comment || '-'}</p>
-                    <button onclick="deleteOrder('${item.id}')">Видалити</button>
+                    <div class="time-badge">🕒 ${item.time}</div>
+                    <p>👤 <b>Ім'я:</b> ${item.name}</p>
+                    <p>📞 <b>Тел:</b> <a href="tel:${item.phone}" class="phone-link">${item.phone}</a></p>
+                    <p>📍 <b>Куди:</b> ${item.address}</p>
+                    <p>💬 <b>Комент:</b> <span style="font-style:italic; color:#666;">${item.comment || '-'}</span></p>
+                    <button class="del-btn" onclick="deleteOrder('${item.id}')">Видалити запис</button>
                 </div>
             `).join('');
         }
 
         async function deleteOrder(id) {
-            if (!confirm("Видалити замовлення?")) return;
+            if (!confirm("Видалити це замовлення з бази?")) return;
+            const pass = localStorage.getItem("adminPass");
+            
             const res = await fetch("/api/taxi/delete", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ pass: CURRENT_PASS, id: id })
+                body: JSON.stringify({ pass, id })
             });
-            if (res.ok) loadTaxi();
+
+            if (res.ok) {
+                loadTaxi();
+            } else {
+                alert("Помилка видалення");
+            }
         }
 
-        loadTaxi();
+        // Авто-вхід якщо є пароль
+        if (localStorage.getItem("adminPass")) {
+            login();
+        }
     </script>
 </body>
 </html>
