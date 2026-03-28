@@ -94,7 +94,6 @@
         .news-tag { color: #ef4444; font-weight: 800; font-size: 0.65rem; text-transform: uppercase; margin-bottom: 5px; display: block; }
         .news-card h3 { margin: 0 0 10px 0; font-size: 1.1rem; line-height: 1.3; }
 
-        /* САЙДБАР БЛОКИ */
         .sidebar-section { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); padding: 15px; margin-bottom: 20px; }
         .sidebar-section h4 { margin-top: 0; border-bottom: 2px solid var(--ua-yellow); display: inline-block; margin-bottom: 15px; color: var(--ua-blue); }
         
@@ -104,7 +103,6 @@
         .link-item { display: block; padding: 8px 0; color: var(--text-dark); text-decoration: none; font-size: 0.9rem; border-bottom: 1px solid var(--border); }
         .link-item:hover { color: var(--ua-blue); padding-left: 5px; }
 
-        /* СПЕЦІАЛЬНІ КАРТКИ ДЛЯ ТРАНСПОРТУ */
         .transport-btn {
             display: block;
             background: var(--ua-blue);
@@ -118,6 +116,23 @@
             font-size: 0.85rem;
         }
         .bus-ukraine { background: #2ecc71; }
+
+        /* НОВІ ФІШКИ */
+        .german-box { background: var(--ua-blue); color: white; padding: 15px; border-radius: 12px; text-align: center; }
+        
+        #floating-sos {
+            position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px;
+            background: #ef4444; color: white; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; cursor: pointer; z-index: 999;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+            animation: pulse-red 2s infinite;
+        }
+        @keyframes pulse-red {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { transform: scale(1.1); box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
 
         .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; backdrop-filter:blur(5px); padding:15px; }
         .modal-content { background:var(--card-bg); max-width:600px; margin:30px auto; border-radius:15px; padding:25px; position:relative; overflow-y: auto; max-height: 80vh; }
@@ -151,27 +166,40 @@
 
         <aside>
             <div class="sidebar-section">
+                <h4>🛒 Магазини сьогодні</h4>
+                <div id="status-content" style="padding: 10px; border-radius: 8px; font-weight: bold; text-align: center; font-size: 0.9rem;">
+                    Завантаження...
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h4>🇩🇪 Вивчаємо німецьку</h4>
+                <div class="german-box">
+                    <h2 id="de-word" style="margin: 0; font-size: 1.4rem;">...</h2>
+                    <p id="ua-word" style="margin: 5px 0; font-weight: bold; color: var(--ua-yellow);"></p>
+                    <small id="de-example" style="display:block; margin-top:10px; font-style: italic; font-size: 0.8rem; opacity: 0.9;"></small>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
                 <h4>🚋 Транспорт Дрездена</h4>
-                <p style="font-size: 0.85rem; margin-top: 0;">Схеми руху та розклад DVB:</p>
                 <a href="https://www.dvb.de/assets/static/pdf-stadtplan/dvb_liniennetz_dresden.pdf" target="_blank" class="link-item">🗺️ Карта трамваїв (PDF)</a>
                 <a href="https://www.dvb.de/de-de/fahrplan/stadtplan/" target="_blank" class="transport-btn">📍 Карта онлайн (LIVE)</a>
             </div>
 
             <div class="sidebar-section">
                 <h4>🚌 Автобуси в Україну</h4>
-                <p style="font-size: 0.85rem; margin-top: 0;">Зупинка: <b>Dresden Hbf (Bayrische Str.)</b></p>
+                <p style="font-size: 0.8rem;">Dresden Hbf (Bayrische Str.)</p>
                 <a href="https://www.flixbus.ua/" target="_blank" class="link-item">🟢 FlixBus</a>
-                <a href="https://infobus.eu/" target="_blank" class="link-item">🔵 InfoBus (усі перевізники)</a>
-                <a href="https://busfor.ua/" target="_blank" class="link-item">🟡 Busfor</a>
-                <a href="https://www.flixbus.ua/" target="_blank" class="transport-btn bus-ukraine">🎫 Купити квиток</a>
+                <a href="https://infobus.eu/" target="_blank" class="link-item">🔵 InfoBus</a>
+                <a href="https://www.flixbus.ua/" target="_blank" class="transport-btn bus-ukraine">🎫 Квитки в Україну</a>
             </div>
 
-            <div class="sidebar-section">
-                <h4>🛠️ Послуги та Робота</h4>
-                <p style="font-size: 0.85rem;">Шукаєте майстра або пропонуєте роботу?</p>
-                <a href="#" onclick="toggleModal('contactModal', true)" class="link-item">🔧 Монтаж металоконструкцій</a>
-                <a href="#" onclick="toggleModal('contactModal', true)" class="link-item">📦 Допомога з переїздом</a>
-                <a href="#" onclick="toggleModal('contactModal', true)" class="link-item">➕ Додати оголошення</a>
+            <div class="sidebar-section" style="border: 2px solid var(--ua-blue);">
+                <h4>🏗️ Послуги Майстра</h4>
+                <p style="font-size: 0.85rem; font-weight: bold;">Монтаж металоконструкцій</p>
+                <p style="font-size: 0.8rem;">Якісна збірка, зварювання та встановлення в Дрездені.</p>
+                <a href="#" onclick="toggleModal('contactModal', true)" class="transport-btn">📩 Замовити розрахунок</a>
             </div>
 
             <div class="sidebar-section">
@@ -188,6 +216,8 @@
         </aside>
     </div>
 </div>
+
+<div id="floating-sos" title="Екстрена допомога" onclick="alert('Швидка: 112\nПоліція: 110\nЧерговий лікар: 116 117')">🆘</div>
 
 <div id="newsModal" class="modal" onclick="closeByOutside(event)">
     <div class="modal-content">
@@ -233,6 +263,32 @@
         } catch (e) { document.getElementById('weather').style.display = 'none'; }
     }
 
+    // 🆕 НІМЕЦЬКА МОВА
+    function setGermanWord() {
+        const words = [
+            { de: "Die Anmeldung", ua: "Реєстрація", ex: "Ich brauche einen Termin." },
+            { de: "Der Mietvertrag", ua: "Договір оренди", ex: "Unterschreiben Sie hier." },
+            { de: "Pünktlich", ua: "Пунктуально", ex: "In Deutschland muss man pünktlich sein." },
+            { de: "Das Jobcenter", ua: "Центр зайнятості", ex: "Ich gehe zum Jobcenter." },
+            { de: "Die Versicherung", ua: "Страховка", ex: "Haben Sie eine Versicherung?" }
+        ];
+        const word = words[new Date().getDate() % words.length];
+        document.getElementById('de-word').innerText = word.de;
+        document.getElementById('ua-word').innerText = word.ua;
+        document.getElementById('de-example').innerText = word.ex;
+    }
+
+    // 🆕 СТАТУС МАГАЗИНІВ
+    function checkShops() {
+        const now = new Date();
+        const day = now.getDay();
+        const hour = now.getHours();
+        const el = document.getElementById('status-content');
+        if (day === 0) { el.innerText = "🔴 ЗАЧИНЕНО (Неділя)"; el.style.background = "#fee2e2"; el.style.color = "#ef4444"; }
+        else if (hour >= 20 || hour < 7) { el.innerText = "🟠 ЗАЧИНЕНО (Ніч)"; el.style.background = "#fff7ed"; el.style.color = "#ea580c"; }
+        else { el.innerText = "🟢 ВІДЧИНЕНО"; el.style.background = "#dcfce7"; el.style.color = "#16a34a"; }
+    }
+
     function toggleTheme() {
         document.body.classList.toggle('dark-mode');
         localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
@@ -253,7 +309,6 @@
             const news = await res.json();
             const grid = document.getElementById('newsGrid');
             const urgent = document.getElementById('urgentFeed');
-
             grid.innerHTML = news.map(n => {
                 const hasPhoto = n.img && n.img !== "assets/img/auto-news.jpg";
                 return `
@@ -267,7 +322,6 @@
                     </div>
                 `;
             }).join('');
-
             urgent.innerHTML = news.slice(0, 5).map(n => `
                 <div style="cursor:pointer; padding:8px 0; border-bottom:1px solid var(--border);" onclick="openNews('${encodeURIComponent(JSON.stringify(n))}')">
                     <div style="font-size:0.85rem; font-weight:500;">${n.title}</div>
@@ -305,13 +359,12 @@
         const fd = new FormData(e.target);
         const data = Object.fromEntries(fd);
         if (data.captcha.toUpperCase() !== captcha) { alert("Код невірний!"); return; }
-        
         await fetch('/api/taxi', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ name: data.userName, phone: data.userContact, comment: data.message })
         });
-        alert("Повідомлення надіслано!");
+        alert("Надіслано!");
         toggleModal('contactModal', false);
     };
 
@@ -320,6 +373,8 @@
         fetchWeather();
         fetchCurrency();
         loadContent();
+        setGermanWord();
+        checkShops();
     };
 </script>
 </body>
