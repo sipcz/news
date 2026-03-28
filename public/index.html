@@ -65,6 +65,7 @@
             grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
             gap: 30px;
             padding: 40px 10%;
+            min-height: 200px;
         }
 
         .news-card {
@@ -90,7 +91,7 @@
         .news-tag { color: var(--accent); font-size: 11px; font-weight: bold; text-transform: uppercase; }
         .news-title { font-size: 1.4rem; margin: 10px 0; line-height: 1.3; }
 
-        /* Модальне вікно для тексту */
+        /* Модальне вікно */
         #newsModal {
             display: none;
             position: fixed;
@@ -103,13 +104,14 @@
         .modal-content { max-width: 800px; margin: auto; }
         .close-btn { float: right; color: var(--accent); font-size: 40px; cursor: pointer; }
 
-        /* Контактна форма з Honeypot */
+        /* Форма */
         .contact-section {
             background: var(--card-bg);
             margin: 50px 10%;
             padding: 40px;
             border-radius: 25px;
             border: 1px solid var(--border);
+            backdrop-filter: blur(10px);
         }
         input, textarea {
             width: 100%;
@@ -120,7 +122,7 @@
             color: #fff;
             border-radius: 10px;
         }
-        .hp-field { display: none !important; } /* Пастка для ботів */
+        .hp-field { display: none !important; position: absolute; left: -9999px; } /* Захист */
 
         button {
             background: var(--accent);
@@ -131,7 +133,9 @@
             border-radius: 10px;
             cursor: pointer;
             width: 100%;
+            transition: 0.3s;
         }
+        button:hover { filter: brightness(1.2); }
     </style>
 </head>
 <body>
@@ -144,7 +148,7 @@
 
     <header>
         <h1 id="main-title">Новини LIVE</h1>
-        <p>Оперативні події з твого власного сервера</p>
+        <p>Оперативні події з твого власного сервера у Дрездені</p>
     </header>
 
     <div class="news-grid" id="newsGrid">
@@ -171,7 +175,7 @@
             
             <div style="margin:10px 0; background:rgba(255,255,255,0.1); padding:10px; border-radius:8px; text-align:center;">
                 Код перевірки: <span id="bot-letters" style="color:var(--accent); font-weight:bold; letter-spacing:3px;"></span>
-                <input type="text" name="captcha" placeholder="Введіть код сюди" required style="width:150px; margin-left:10px;">
+                <input type="text" name="captcha" placeholder="Введіть код" required style="width:120px; margin-left:10px;">
             </div>
             
             <button type="submit">Надіслати повідомлення</button>
@@ -182,30 +186,42 @@
     <script>
         // 1. ЗАВАНТАЖЕННЯ НОВИН
         async function loadNews() {
+            const grid = document.getElementById('newsGrid');
+            grid.innerHTML = "<p style='grid-column: 1/-1; text-align:center;'>Завантаження стрічки...</p>";
+
             try {
                 const res = await fetch('/api/news');
+                if (!res.ok) throw new Error("Сервер не відповідає");
+                
                 const news = await res.json();
-                const grid = document.getElementById('newsGrid');
+                
+                if (news.length === 0) {
+                    grid.innerHTML = "<p style='grid-column: 1/-1; text-align:center;'>Новин поки немає. Зайдіть в адмінку, щоб додати першу!</p>";
+                    return;
+                }
                 
                 grid.innerHTML = news.map(n => `
                     <div class="news-card" onclick="openNews('${encodeURIComponent(JSON.stringify(n))}')">
-                        <img src="${n.img || 'assets/img/news-placeholder.jpg'}">
+                        <img src="${n.img || 'assets/img/news-placeholder.jpg'}" onerror="this.src='https://via.placeholder.com/400x200?text=No+Image'">
                         <div class="news-info">
-                            <span class="news-tag">${n.category}</span>
+                            <span class="news-tag">${n.category || 'Подія'}</span>
                             <div class="news-title">${n.title}</div>
-                            <div class="news-date">${n.date}</div>
+                            <div class="news-date">${n.date || ''}</div>
                         </div>
                     </div>
                 `).join('');
-            } catch(e) { console.log("Помилка завантаження новин"); }
+            } catch(e) { 
+                grid.innerHTML = "<p style='grid-column: 1/-1; text-align:center; color:red;'>Помилка зв'язку з сервером. Перевірте Termux.</p>";
+                console.error("Load error:", e); 
+            }
         }
 
         // 2. МОДАЛЬНЕ ВІКНО
         function openNews(data) {
             const n = JSON.parse(decodeURIComponent(data));
-            document.getElementById('mImg').src = n.img;
+            document.getElementById('mImg').src = n.img || 'https://via.placeholder.com/800x400?text=No+Image';
             document.getElementById('mTitle').innerText = n.title;
-            document.getElementById('mDate').innerText = n.date;
+            document.getElementById('mDate').innerText = n.date || '';
             document.getElementById('mText').innerText = n.content;
             document.getElementById('newsModal').style.display = 'block';
             document.body.style.overflow = 'hidden';
@@ -216,7 +232,7 @@
             document.body.style.overflow = 'auto';
         }
 
-        // 3. ЗАХИСТ ВІД БОТІВ (CAPTCHA + HONEYPOT)
+        // 3. CAPTCHA & FORM
         const form = document.getElementById('contactForm');
         let currentCode = "";
 
@@ -231,13 +247,13 @@
             const formData = new FormData(form);
             const data = Object.fromEntries(formData.entries());
 
-            // Перевірка Honeypot (якщо заповнено - це бот)
+            // Honeypot перевірка
             if (data.hp_name) {
-                console.warn("Бот виявлений!");
+                console.warn("Спроба бот-атаки!");
                 return;
             }
 
-            // Перевірка Captcha
+            // Captcha перевірка
             if (data.captcha.toUpperCase() !== currentCode) {
                 status.style.color = "red";
                 status.innerText = "Невірний код перевірки!";
@@ -245,17 +261,45 @@
                 return;
             }
 
+            status.style.color = "#fff";
             status.innerText = "Надсилання...";
-            // Тут відправка на твій API (наприклад, taxi.js або новий news-contact.js)
-            status.style.color = "var(--accent)";
-            status.innerText = "Повідомлення успішно надіслано!";
-            form.reset();
-            generateCaptcha();
+
+            try {
+                // Відправляємо в API таксі, яке ми налаштували раніше
+                const res = await fetch('/api/taxi', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: data.userName,
+                        phone: data.userEmail, // Використовуємо імейл або телефон
+                        address: "Зворотний зв'язок із сайту",
+                        comment: data.message
+                    })
+                });
+
+                if (res.ok) {
+                    status.style.color = "var(--accent)";
+                    status.innerText = "Повідомлення успішно надіслано!";
+                    form.reset();
+                    generateCaptcha();
+                } else {
+                    throw new Error("Помилка API");
+                }
+            } catch (err) {
+                status.style.color = "red";
+                status.innerText = "Помилка відправки. Спробуйте пізніше.";
+            }
         };
 
         // Запуск
         generateCaptcha();
         loadNews();
+
+        // Закриття модалки при кліку поза нею
+        window.onclick = function(event) {
+            const modal = document.getElementById('newsModal');
+            if (event.target == modal) closeNews();
+        }
     </script>
 </body>
 </html>
