@@ -48,7 +48,7 @@
         }
 
         .nav-left { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
-        .logo { font-size: 1.4rem; font-weight: 900; text-decoration: none; display: flex; align-items: center; }
+        .logo { font-size: 1.4rem; font-weight: 900; text-decoration: none; display: flex; align-items: center; cursor: pointer; }
         .logo .live { color: var(--ua-blue); text-transform: uppercase; }
         .logo .city { color: var(--de-black); margin-left: 4px; font-weight: 400; }
 
@@ -87,6 +87,7 @@
             overflow: hidden;
             display: flex;
             flex-direction: column;
+            cursor: pointer;
         }
         .news-card:hover { border-color: var(--ua-blue); transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
         .news-card img { width: 100%; height: 160px; object-fit: cover; }
@@ -101,7 +102,7 @@
         .emergency-item span { color: #ef4444; }
 
         .link-item { display: block; padding: 8px 0; color: var(--text-dark); text-decoration: none; font-size: 0.9rem; border-bottom: 1px solid var(--border); }
-        .link-item:hover { color: var(--ua-blue); padding-left: 5px; }
+        .link-item:hover { color: var(--ua-blue); padding-left: 5px; cursor: pointer; }
 
         .transport-btn {
             display: block;
@@ -144,12 +145,12 @@
 
 <nav>
     <div class="nav-left">
-        <a href="/" class="logo"><span class="live">LIVE</span><span class="city">Дрезден</span></a>
+        <div onclick="loadContent()" class="logo"><span class="live">LIVE</span><span class="city">Дрезден</span></div>
         <div class="info-bar">
             <div class="badge" id="weather">☀️ +..°C</div>
             <div class="badge" id="currency">€ .. ₴</div>
             <div class="badge" id="clock">🇩🇪 00:00:00</div>
-            <div class="badge" id="clock-ua" style="border-left: 2px solid var(--ua-blue);">🇺🇦 00:00:00</div>
+            <div class="badge" id="clock-ua">🇺🇦 00:00:00</div>
         </div>
     </div>
     <div class="nav-right">
@@ -161,10 +162,20 @@
 <div class="container">
     <div class="news-grid">
         <main>
+            <div id="feedTitle" style="margin-bottom: 15px; font-weight: bold; display: none;"></div>
             <div class="main-feed" id="newsGrid"></div>
         </main>
 
         <aside>
+            <div class="sidebar-section">
+                <h4>📘 Довідник емігранта</h4>
+                <p style="font-size: 0.8rem; margin-top: 0;">Корисні статті та гайди:</p>
+                <div class="link-item" onclick="filterByCategory('Еміграція')">🛡️ Параграф 24: Деталі</div>
+                <div class="link-item" onclick="filterByCategory('Еміграція')">🏠 Пошук житла (Wohnung)</div>
+                <div class="link-item" onclick="filterByCategory('Еміграція')">💼 Робота та Jobcenter</div>
+                <div class="link-item" onclick="filterByCategory('Еміграція')">🏥 Медичне страхування</div>
+            </div>
+
             <div class="sidebar-section">
                 <h4>🛒 Магазини сьогодні</h4>
                 <div id="status-content" style="padding: 10px; border-radius: 8px; font-weight: bold; text-align: center; font-size: 0.9rem;">
@@ -174,7 +185,6 @@
 
             <div class="sidebar-section">
                 <h4>⛰️ Туризм у Саксонії</h4>
-                <p style="font-size: 0.8rem; margin-top: 0;">Карти та маршрути:</p>
                 <a href="https://www.saechsische-schweiz.de/en/region/maps" target="_blank" class="link-item">⛰️ Саксонська Швейцарія (Карта)</a>
                 <a href="https://www.schloesserland-sachsen.de/en/map-view/" target="_blank" class="link-item">🏰 Замки Саксонії (Інтерактив)</a>
                 <a href="https://www.elberadweg.de/en/interactive-map/" target="_blank" class="link-item">🚲 Веломаршрут вздовж Ельби</a>
@@ -182,7 +192,6 @@
 
             <div class="sidebar-section">
                 <h4>🏊 Басейни Дрездена</h4>
-                <p style="font-size: 0.8rem; margin-top: 0;">Графік та ціни:</p>
                 <a href="https://www.dresdner-baeder.de/hallenbaeder/georg-arnhold-bad/" target="_blank" class="link-item">🌊 Georg-Arnhold-Bad (Центр)</a>
                 <a href="https://www.dresdner-baeder.de/hallenbaeder/nordbad/" target="_blank" class="link-item">🏊 Nordbad (Neustadt)</a>
                 <a href="https://www.dresdner-baeder.de/" target="_blank" class="transport-btn" style="background: #00a3e0;">🕒 Дивитись розклад усіх</a>
@@ -197,24 +206,9 @@
                 </div>
             </div>
 
-            <div class="sidebar-section">
-                <h4>🚋 Транспорт Дрездена</h4>
-                <a href="https://www.dvb.de/assets/static/pdf-stadtplan/dvb_liniennetz_dresden.pdf" target="_blank" class="link-item">🗺️ Карта трамваїв (PDF)</a>
-                <a href="https://www.dvb.de/de-de/fahrplan/stadtplan/" target="_blank" class="transport-btn">📍 Карта онлайн (LIVE)</a>
-            </div>
-
-            <div class="sidebar-section">
-                <h4>🚌 Автобуси в Україну</h4>
-                <p style="font-size: 0.8rem;">Dresden Hbf (Bayrische Str.)</p>
-                <a href="https://www.flixbus.ua/" target="_blank" class="link-item">🟢 FlixBus</a>
-                <a href="https://infobus.eu/" target="_blank" class="link-item">🔵 InfoBus</a>
-                <a href="https://www.flixbus.ua/" target="_blank" class="transport-btn bus-ukraine">🎫 Квитки в Україну</a>
-            </div>
-
             <div class="sidebar-section" style="border: 2px solid var(--ua-blue);">
                 <h4>🏗️ Послуги Майстра</h4>
                 <p style="font-size: 0.85rem; font-weight: bold;">Монтаж металоконструкцій</p>
-                <p style="font-size: 0.8rem;">Якісна збірка, зварювання та встановлення в Дрездені.</p>
                 <a href="#" onclick="toggleModal('contactModal', true)" class="transport-btn">📩 Замовити розрахунок</a>
             </div>
 
@@ -248,14 +242,13 @@
 <div id="contactModal" class="modal" onclick="closeByOutside(event)">
     <div class="modal-content" style="max-width: 450px;">
         <span class="close-btn" onclick="toggleModal('contactModal', false)">&times;</span>
-        <h3>Напишіть нам</h3>
+        <h3>Зворотний зв'язок</h3>
         <form id="contactForm">
             <input type="text" name="userName" required placeholder="Ваше ім'я" style="width:100%; padding:10px; margin-bottom:10px; border-radius:6px; border:1px solid var(--border); background: var(--card-bg); color: var(--text-dark);">
             <input type="text" name="userContact" required placeholder="Телефон або Email" style="width:100%; padding:10px; margin-bottom:10px; border-radius:6px; border:1px solid var(--border); background: var(--card-bg); color: var(--text-dark);">
-            <textarea name="message" rows="4" required placeholder="Ваше повідомлення або оголошення..." style="width:100%; padding:10px; margin-bottom:10px; border-radius:6px; border:1px solid var(--border); background: var(--card-bg); color: var(--text-dark);"></textarea>
+            <textarea name="message" rows="4" required placeholder="Ваше повідомлення..." style="width:100%; padding:10px; margin-bottom:10px; border-radius:6px; border:1px solid var(--border); background: var(--card-bg); color: var(--text-dark);"></textarea>
             <div style="margin-bottom:10px;">Код: <span id="captcha-code" style="font-weight:bold;"></span> <input type="text" name="captcha" style="width:60px; padding: 5px;"></div>
             <button type="submit" class="btn-contact" style="width:100%; padding:12px;">Надіслати</button>
-            <p id="formStatus"></p>
         </form>
     </div>
 </div>
@@ -263,7 +256,6 @@
 <footer>&copy; 2026 LIVE Дрезден — Портал для українців у Саксонії</footer>
 
 <script>
-    // Оновлена функція годинника з двома часовими поясами
     function updateClock() {
         const now = new Date();
         const deOptions = { timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit', second: '2-digit' };
@@ -287,8 +279,7 @@
             { de: "Die Anmeldung", ua: "Реєстрація", ex: "Ich brauche einen Termin." },
             { de: "Der Mietvertrag", ua: "Договір оренди", ex: "Unterschreiben Sie hier." },
             { de: "Pünktlich", ua: "Пунктуально", ex: "In Deutschland muss man pünktlich sein." },
-            { de: "Das Jobcenter", ua: "Центр зайнятості", ex: "Ich gehe zum Jobcenter." },
-            { de: "Die Versicherung", ua: "Страховка", ex: "Haben Sie eine Versicherung?" }
+            { de: "Das Jobcenter", ua: "Центр зайнятості", ex: "Ich gehe zum Jobcenter." }
         ];
         const word = words[new Date().getDate() % words.length];
         document.getElementById('de-word').innerText = word.de;
@@ -306,6 +297,54 @@
         else { el.innerText = "🟢 ВІДЧИНЕНО"; el.style.background = "#dcfce7"; el.style.color = "#16a34a"; }
     }
 
+    async function loadContent() {
+        try {
+            document.getElementById('feedTitle').style.display = 'none';
+            const res = await fetch('/api/news');
+            const news = await res.json();
+            renderNews(news);
+            
+            const urgent = document.getElementById('urgentFeed');
+            urgent.innerHTML = news.slice(0, 5).map(n => `
+                <div style="cursor:pointer; padding:8px 0; border-bottom:1px solid var(--border);" onclick="openNews('${encodeURIComponent(JSON.stringify(n))}')">
+                    <div style="font-size:0.85rem; font-weight:500;">${n.title}</div>
+                </div>
+            `).join('');
+        } catch (e) {}
+    }
+
+    function renderNews(news) {
+        const grid = document.getElementById('newsGrid');
+        grid.innerHTML = news.map(n => {
+            const hasPhoto = n.img && n.img !== "assets/img/auto-news.jpg";
+            return `
+                <div class="news-card" onclick="openNews('${encodeURIComponent(JSON.stringify(n))}')">
+                    ${hasPhoto ? `<img src="${n.img}" alt="img">` : ''}
+                    <div class="news-content">
+                        <span class="news-tag">${n.category || 'Дрезден'}</span>
+                        <h3>${n.title}</h3>
+                        <div style="font-size:0.7rem; color:#888;">${n.date}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    async function filterByCategory(cat) {
+        try {
+            const res = await fetch('/api/news');
+            const news = await res.json();
+            const filtered = news.filter(n => n.category === cat);
+            
+            const titleEl = document.getElementById('feedTitle');
+            titleEl.innerText = `Рубрика: ${cat}`;
+            titleEl.style.display = 'block';
+            
+            renderNews(filtered);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } catch (e) {}
+    }
+
     function toggleTheme() {
         document.body.classList.toggle('dark-mode');
         localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
@@ -317,33 +356,6 @@
             const res = await fetch('https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?valcode=EUR&json');
             const data = await res.json();
             document.getElementById('currency').innerHTML = `€ <b>${data[0].rate.toFixed(2)} ₴</b>`;
-        } catch (e) {}
-    }
-
-    async function loadContent() {
-        try {
-            const res = await fetch('/api/news');
-            const news = await res.json();
-            const grid = document.getElementById('newsGrid');
-            const urgent = document.getElementById('urgentFeed');
-            grid.innerHTML = news.map(n => {
-                const hasPhoto = n.img && n.img !== "assets/img/auto-news.jpg";
-                return `
-                    <div class="news-card" onclick="openNews('${encodeURIComponent(JSON.stringify(n))}')">
-                        ${hasPhoto ? `<img src="${n.img}" alt="img">` : ''}
-                        <div class="news-content">
-                            <span class="news-tag">${n.category || 'Дрезден'}</span>
-                            <h3>${n.title}</h3>
-                            <div style="font-size:0.7rem; color:#888;">${n.date}</div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-            urgent.innerHTML = news.slice(0, 5).map(n => `
-                <div style="cursor:pointer; padding:8px 0; border-bottom:1px solid var(--border);" onclick="openNews('${encodeURIComponent(JSON.stringify(n))}')">
-                    <div style="font-size:0.85rem; font-weight:500;">${n.title}</div>
-                </div>
-            `).join('');
         } catch (e) {}
     }
 
@@ -371,27 +383,8 @@
         document.getElementById('captcha-code').innerText = captcha;
     }
 
-    document.getElementById('contactForm').onsubmit = async (e) => {
-        e.preventDefault();
-        const fd = new FormData(e.target);
-        const data = Object.fromEntries(fd);
-        if (data.captcha.toUpperCase() !== captcha) { alert("Код невірний!"); return; }
-        await fetch('/api/taxi', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ name: data.userName, phone: data.userContact, comment: data.message })
-        });
-        alert("Надіслано!");
-        toggleModal('contactModal', false);
-    };
-
     window.onload = () => {
-        updateClock();
-        fetchWeather();
-        fetchCurrency();
-        loadContent();
-        setGermanWord();
-        checkShops();
+        updateClock(); fetchWeather(); fetchCurrency(); loadContent(); setGermanWord(); checkShops();
     };
 </script>
 </body>
