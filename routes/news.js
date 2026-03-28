@@ -1,21 +1,30 @@
 import express from "express";
 import { promises as fs } from "fs";
+import multer from "multer";
+import path from "path";
 
 const router = express.Router();
 const NEWS_FILE = "./news-data.json";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "pedro2026";
 
-// Ініціалізація файлу бази даних
-async function initNews() {
-    try {
-        await fs.access(NEWS_FILE);
-    } catch {
-        await fs.writeFile(NEWS_FILE, "[]");
+// 1. НАЛАШТУВАННЯ ПРИЙОМУ ФАЙЛІВ (MULTER)
+const storage = multer.diskStorage({
+    destination: "uploads/", // Куди зберігати
+    filename: (req, file, cb) => {
+        // Ім'я файлу = дата + розширення (наприклад: 1711658400000.jpg)
+        cb(null, Date.now() + path.extname(file.originalname));
     }
-}
-initNews();
+});
+const upload = multer({ storage });
 
-// 1. ОТРИМАТИ ВСІ НОВИНИ
+// Ініціалізація бази даних та папки завантажень
+async function initStorage() {
+    try { await fs.access(NEWS_FILE); } catch { await fs.writeFile(NEWS_FILE, "[]"); }
+    try { await fs.access("uploads"); } catch { await fs.mkdir("uploads"); }
+}
+initStorage();
+
+// 2. ОТРИМАТИ ВСІ НОВИНИ (БЕЗ ЗМІН)
 router.get("/", async (req, res) => {
     try {
         const data = await fs.readFile(NEWS_FILE, "utf-8");
@@ -25,18 +34,20 @@ router.get("/", async (req, res) => {
     }
 });
 
-// 2. ДОДАТИ НОВИНУ (З ПЕРЕВІРКОЮ ТА ВАЛІДАЦІЄЮ)
-router.post("/add", async (req, res) => {
-    const { pass, article } = req.body;
+// 3. ДОДАТИ НОВИНУ (ТЕПЕР З ФОТО)
+// upload.single("image") означає, що ми чекаємо один файл з поля "image"
+router.post("/add", upload.single("image"), async (req, res) => {
+    // Коли ми використовуємо FormData, дані приходять у req.body напряму
+    const { pass, title, category, content } = req.body;
 
     // 🛡️ Перевірка пароля
     if (pass !== ADMIN_PASSWORD) {
         return res.status(403).json({ error: "Доступ заборонено!" });
     }
 
-    // 🛡️ Валідація даних (захист від некоректних запитів)
-    if (!article || !article.title || !article.content) {
-        return res.status(400).json({ error: "Заголовок та текст новини обов'язкові!" });
+    // 🛡️ Валідація тексту
+    if (!title || !content) {
+        return res.status(400).json({ error: "Заголовок та текст обов'язкові!" });
     }
 
     try {
@@ -46,21 +57,22 @@ router.post("/add", async (req, res) => {
         const newArticle = {
             id: Date.now(),
             date: new Date().toLocaleString('uk-UA'),
-            title: article.title.trim(),
-            category: article.category || "Події",
-            img: article.img || "assets/img/default-news.jpg",
-            content: article.content.trim()
+            title: title.trim(),
+            category: category || "Події",
+            // 🔥 Якщо файл завантажено - ставимо шлях до нього, якщо ні - заглушку
+            img: req.file ? `/uploads/${req.file.filename}` : "assets/img/default-news.jpg",
+            content: content.trim()
         };
 
         news.push(newArticle);
         await fs.writeFile(NEWS_FILE, JSON.stringify(news, null, 2));
-        res.json({ success: true });
+        res.json({ success: true, article: newArticle });
     } catch (err) {
-        res.status(500).json({ error: "Помилка при збереженні файлу" });
+        res.status(500).json({ error: "Помилка при збереженні новини" });
     }
 });
 
-// 3. ВИДАЛИТИ НОВИНУ (З ОБРОБКОЮ ПОМИЛОК)
+// 4. ВИДАЛИТИ НОВИНУ
 router.post("/delete", async (req, res) => {
     const { pass, id } = req.body;
 
@@ -72,18 +84,18 @@ router.post("/delete", async (req, res) => {
         const data = await fs.readFile(NEWS_FILE, "utf-8");
         let news = JSON.parse(data);
         
-        // Видаляємо новину за ID
-        const initialLength = news.length;
-        news = news.filter(n => n.id.toString() !== id.toString());
-
-        if (news.length === initialLength) {
-            return res.status(404).json({ error: "Новину не знайдено" });
+        // Знаходимо новину, щоб видалити її фото з папки (опціонально, але корисно)
+        const articleToDelete = news.find(n => n.id.toString() === id.toString());
+        if (articleToDelete && articleToDelete.img.startsWith('/uploads/')) {
+            const filePath = path.join(process.cwd(), articleToDelete.img);
+            try { await fs.unlink(filePath); } catch (e) { console.log("Файл вже видалено"); }
         }
 
+        news = news.filter(n => n.id.toString() !== id.toString());
         await fs.writeFile(NEWS_FILE, JSON.stringify(news, null, 2));
-        res.json({ success: true, message: "Видалено успішно" });
+        res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: "Помилка при видаленні з бази" });
+        res.status(500).json({ error: "Помилка при видаленні" });
     }
 });
 
