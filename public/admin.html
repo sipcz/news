@@ -34,12 +34,7 @@
     </div>
 
     <div id="adminPanel" style="display:none;">
-        <div class="card" style="border-left: 5px solid #ff4d4d;">
-            <h3>🛡️ Журнал подій</h3>
-            <div id="logConsole">Завантаження...</div>
-            <button class="btn" style="background:#555; color:#fff;" onclick="fetchLogs()">Оновити логи</button>
-        </div>
-
+        
         <div class="card">
             <h3>Створити публікацію</h3>
             <input type="text" id="newsTitle" placeholder="Заголовок">
@@ -56,12 +51,17 @@
             <h3>Архів новин</h3>
             <div id="adminNewsList" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;"></div>
         </div>
+
+        <div class="card" style="border-left: 5px solid #ff4d4d;">
+            <h3>🛡️ Журнал подій</h3>
+            <div id="logConsole">Завантаження...</div>
+            <button class="btn" style="background:#555; color:#fff;" onclick="fetchLogs()">Оновити логи</button>
+        </div>
     </div>
 
     <script>
         let CURRENT_PASS = "";
 
-        // Звук удару
         function playHitSound() {
             try {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -72,7 +72,6 @@
             } catch(e) {}
         }
 
-        // Тріщини
         function drawCracks() {
             const c = document.getElementById('crackCanvas'); const ctx = c.getContext('2d');
             c.width=window.innerWidth; c.height=window.innerHeight; c.style.display='block';
@@ -119,7 +118,7 @@
                 if (res.ok) {
                     const text = await res.text();
                     const el = document.getElementById('logConsole');
-                    el.innerText = text; el.scrollTop = el.scrollHeight;
+                    el.innerText = text; el.scrollTop = el.scrollHeight; // Автоматична прокрутка вниз
                 }
             } catch(e) {}
         }
@@ -139,7 +138,15 @@
 
             try {
                 const res = await fetch('/api/news/add', { method: 'POST', body: formData });
-                if (res.ok) { alert("Опубліковано!"); location.reload(); }
+                if (res.ok) { 
+                    alert("Опубліковано!"); 
+                    // ВАЖЛИВО: Очищаємо форму замість перезавантаження сторінки
+                    document.getElementById("newsTitle").value = "";
+                    document.getElementById("newsContent").value = "";
+                    document.getElementById("newsImageInput").value = "";
+                    renderNews(); 
+                    fetchLogs();
+                }
                 else alert("Помилка публікації");
             } catch (err) { alert("Помилка з'єднання"); }
         }
