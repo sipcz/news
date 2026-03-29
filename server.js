@@ -110,7 +110,7 @@ function extractImage(item) {
   return "assets/img/auto-news.jpg";
 }
 
-// --- ГРАБЕР НОВИН ---
+// --- ГРАБЕР НОВИН (ЗБІЛЬШЕНО ДО 2000 СИМВОЛІВ) ---
 async function autoFetchNews() {
   try {
     let news = safeReadJson(NEWS_FILE, []);
@@ -127,11 +127,19 @@ async function autoFetchNews() {
         feed.items.forEach(item => {
           const title = (item.title || "").trim();
           if (!title || news.some(n => n.title === title)) return;
+          
+          // ВИТЯГУЄМО МАКСИМУМ ТЕКСТУ (пріоритет на contentEncoded)
+          let rawContent = item.contentEncoded || item.content || item.contentSnippet || "";
+          // Видаляємо HTML-теги і зайві пробіли
+          let cleanContent = rawContent.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
+          // Обрізаємо до 2000 символів
+          let shortContent = cleanContent.length > 2000 ? cleanContent.substring(0, 2000) + "..." : cleanContent;
+
           news.push({
             id: new Date(item.pubDate || Date.now()).getTime(),
             date: new Date(item.pubDate || Date.now()).toLocaleString('uk-UA', { timeZone: 'Europe/Berlin' }),
             title, category: s.n, img: extractImage(item),
-            content: (item.contentSnippet || item.content || "").replace(/<[^>]*>?/gm, '').substring(0, 450) + "...",
+            content: shortContent,
             link: item.link || ""
           });
         });
@@ -188,7 +196,7 @@ app.post('/api/admin/login', async (req, res) => {
   }
 });
 
-// --- АДМІНКА: ДОДАТИ НОВИНУ ---
+// --- АДМІНКА: ДОДАТИ НОВИНУ (ЗБІЛЬШЕНО ЛІМІТ ДО 2000 СИМВОЛІВ) ---
 app.post('/api/news/add', upload.single('image'), async (req, res) => {
   try {
     const { pass, title, category, content } = req.body;
@@ -201,7 +209,7 @@ app.post('/api/news/add', upload.single('image'), async (req, res) => {
       title: String(title).trim(),
       category: category || "Адмін",
       img: req.file ? `assets/news/${req.file.filename}` : "assets/img/auto-news.jpg",
-      content: String(content).trim().substring(0, 1000)
+      content: String(content).trim().substring(0, 2000)
     };
     news.unshift(item);
     safeWriteJson(NEWS_FILE, news.slice(0, 150));
