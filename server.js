@@ -13,7 +13,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-// Налаштування парсера для читання медіа-тегів (фото) з RSS
 const parser = new Parser({
     customFields: {
         item: [
@@ -30,116 +29,82 @@ const CHAT_ID = process.env.CHAT_ID || "8257665442";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "pedro2026";
 const NEWS_FILE = path.join(__dirname, "news-data.json");
 const LOG_FILE = path.join(__dirname, "server.log");
+const BLOCKS_FILE = path.join(__dirname, "blocks.json");
 const UPLOADS_DIR = path.join(__dirname, "assets/news");
 
-// Ініціалізація структури проекту
+// Ініціалізація файлів
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 if (!fs.existsSync(NEWS_FILE)) fs.writeFileSync(NEWS_FILE, "[]");
 if (!fs.existsSync(LOG_FILE)) fs.writeFileSync(LOG_FILE, "");
+if (!fs.existsSync(BLOCKS_FILE)) fs.writeFileSync(BLOCKS_FILE, JSON.stringify({ attempts: {}, blocked: {} }));
 
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors());
 app.use(express.json());
 
-// Завантаження власних фото з адмінки
 const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, UPLOADS_DIR),
     filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname))
 });
 const upload = multer({ storage });
 
-// --- СИСТЕМА ЛОГУВАННЯ ТА TELEGRAM ---
+// --- ДОПОМІЖНІ ФУНКЦІЇ БЕЗПЕКИ ---
+const getSecurityData = () => JSON.parse(fs.readFileSync(BLOCKS_FILE, "utf-8"));
+const saveSecurityData = (data) => fs.writeFileSync(BLOCKS_FILE, JSON.stringify(data, null, 2));
+
 const writeLog = async (msg, type = "INFO") => {
     const time = new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Berlin' });
     const logEntry = `[${time}] [${type}] ${msg}\n`;
     fs.appendFileSync(LOG_FILE, logEntry);
-    console.log(logEntry.trim());
-
     if (["ALERT", "WARN", "SUCCESS", "MSG"].includes(type)) {
-        const icons = { INFO: "ℹ️", WARN: "⚠️", ALERT: "🚨", SUCCESS: "✅", MSG: "📩" };
         try {
             await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
                 chat_id: CHAT_ID,
-                text: `${icons[type] || "🔔"} <b>ПОРТАЛ LIVE:</b>\n${msg}\n<i>${time}</i>`,
+                text: `<b>ПОРТАЛ LIVE:</b>\n${msg}`,
                 parse_mode: "HTML"
             });
-        } catch (e) { console.error("TG Error"); }
+        } catch (e) {}
     }
 };
 
-// --- ЗАХИСТ ТА БАН (ПЕДРО-КОНТРОЛЬ) ---
-const loginAttempts = new Map();
-const blockedIPs = new Map();
-
+// --- ЛОГІН З ЖОРСТКИМ БАНОМ (3 СПРОБИ) ---
 app.post('/api/admin/login', async (req, res) => {
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     const now = Date.now();
+    let secData = getSecurityData();
 
-    if (blockedIPs.has(ip)) {
-        if (now < blockedIPs.get(ip)) {
+    // Перевірка на бан
+    if (secData.blocked[ip]) {
+        if (now < secData.blocked[ip]) {
             return res.status(403).json({ error: "IP ЗАБЛОКОВАНО", showPedro: true });
+        } else {
+            delete secData.blocked[ip];
+            saveSecurityData(secData);
         }
-        blockedIPs.delete(ip);
     }
 
     if (req.body.pass === ADMIN_PASSWORD) {
-        loginAttempts.delete(ip);
+        delete secData.attempts[ip];
+        saveSecurityData(secData);
         await writeLog(`Успішний вхід. IP: ${ip}`, "SUCCESS");
         return res.json({ success: true });
     } else {
-        const count = (loginAttempts.get(ip) || 0) + 1;
-        loginAttempts.set(ip, count);
-        await writeLog(`Невдала спроба входу! IP: ${ip}, Спроба: ${count}`, "WARN");
+        secData.attempts[ip] = (secData.attempts[ip] || 0) + 1;
+        await writeLog(`Невдала спроба! IP: ${ip}, Спроба: ${secData.attempts[ip]}`, "WARN");
 
-        if (count >= 5) {
-            blockedIPs.set(ip, now + 3600000); // 1 година блоку
-            await writeLog(`🚨 IP ${ip} ЗАБАНЕНО за перебір паролів!`, "ALERT");
-            return res.status(403).json({ error: "ЗАБЛОКОВАНО", showPedro: true });
+        if (secData.attempts[ip] >= 3) {
+            secData.blocked[ip] = now + 3600000; // Блок на 1 годину
+            await writeLog(`🚨 IP ${ip} ЗАБАНЕНО (3 невдалі спроби)!`, "ALERT");
         }
-        return res.status(401).json({ error: "Невірний пароль" });
+        
+        saveSecurityData(secData);
+        if (secData.blocked[ip]) return res.status(403).json({ error: "БЛОК", showPedro: true });
+        
+        return res.status(401).json({ error: `Невірний пароль! Залишилося спроб: ${3 - secData.attempts[ip]}` });
     }
 });
 
-// --- ОБРОБКА ФОРМИ ЗВОРОТНОГО ЗВ'ЯЗКУ (ТА ПІДТРИМКИ) ---
-app.post("/api/taxi", async (req, res) => {
-    try {
-        const { name, phone, comment } = req.body;
-        if (!name || !phone) return res.status(400).json({ error: "Заповніть контактні дані" });
-
-        const msg = `📬 <b>НОВЕ ПОВІДОМЛЕННЯ:</b>\n👤 Ім'я: ${name}\n📞 Тел: ${phone}\n💬 Текст: ${comment || "-"}`;
-        await writeLog(msg, "MSG");
-        res.json({ success: true });
-    } catch (err) {
-        res.status(500).json({ error: "Помилка сервера" });
-    }
-});
-
-// --- АВТОМАТИЧНА ЧИСТКА (48 ГОДИН) ---
-function autoCleanOldNews() {
-    try {
-        const data = fs.readFileSync(NEWS_FILE, "utf-8");
-        let news = JSON.parse(data || "[]");
-        const now = Date.now();
-        const twoDays = 172800000; // 48 годин
-
-        // Видаляємо файли старих новин
-        const toDelete = news.filter(n => (now - n.id) >= twoDays);
-        toDelete.forEach(n => {
-            if (n.img && n.img.startsWith('assets/news/')) {
-                const filePath = path.join(__dirname, n.img);
-                if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-            }
-        });
-
-        const filtered = news.filter(n => (now - n.id) < twoDays);
-        if (filtered.length !== news.length) {
-            fs.writeFileSync(NEWS_FILE, JSON.stringify(filtered, null, 2));
-            writeLog(`Чистка: видалено ${news.length - filtered.length} старих новин.`, "INFO");
-        }
-    } catch (e) {}
-}
-
-// --- ГРАБЕР НОВИН (ZAXID.NET + ФОТО) ---
+// --- ГРАБЕР ТА ЧИСТКА ---
 async function autoFetchNews() {
     try {
         let news = JSON.parse(fs.readFileSync(NEWS_FILE, "utf-8") || "[]");
@@ -153,14 +118,11 @@ async function autoFetchNews() {
 
         for (const source of RSS_SOURCES) {
             try {
-                const response = await axios.get(source.url, { timeout: 10000, headers: { 'User-Agent': 'Mozilla/5.0' } });
+                const response = await axios.get(source.url, { timeout: 10000 });
                 const feed = await parser.parseString(response.data);
-                
                 feed.items.forEach(item => {
                     if (!news.some(n => n.title === item.title)) {
                         const pubDate = item.pubDate ? new Date(item.pubDate) : new Date();
-                        
-                        // Розумний пошук картинки
                         let img = "assets/img/auto-news.jpg";
                         if (item.enclosure?.url) img = item.enclosure.url;
                         else if (item.mediaContent?.$.url) img = item.mediaContent.$.url;
@@ -169,7 +131,6 @@ async function autoFetchNews() {
                             const match = desc.match(/<img[^>]+src="([^">]+)"/);
                             if (match) img = match[1];
                         }
-
                         news.push({
                             id: pubDate.getTime(),
                             date: pubDate.toLocaleString('uk-UA', { timeZone: 'Europe/Berlin' }),
@@ -184,40 +145,51 @@ async function autoFetchNews() {
             } catch (err) {}
         }
         news.sort((a, b) => b.id - a.id);
-        fs.writeFileSync(NEWS_FILE, JSON.stringify(news.slice(0, 150), null, 2));
-        autoCleanOldNews();
+        const now = Date.now();
+        const twoDays = 172800000;
+        
+        // Видалення старих фото
+        news.filter(n => (now - n.id) >= twoDays).forEach(n => {
+            if (n.img?.startsWith('assets/news/')) {
+                const fp = path.join(__dirname, n.img);
+                if (fs.existsSync(fp)) fs.unlinkSync(fp);
+            }
+        });
+
+        const filtered = news.filter(n => (now - n.id) < twoDays);
+        fs.writeFileSync(NEWS_FILE, JSON.stringify(filtered.slice(0, 150), null, 2));
     } catch (err) {}
 }
 
 setInterval(autoFetchNews, 20 * 60 * 1000);
 setTimeout(autoFetchNews, 5000);
 
-// --- API МАРШРУТИ ---
-app.get("/api/news", (req, res) => {
-    try {
-        res.json(JSON.parse(fs.readFileSync(NEWS_FILE, "utf-8") || "[]"));
-    } catch (e) { res.json([]); }
+// --- API ---
+app.post("/api/taxi", async (req, res) => {
+    const { name, phone, comment } = req.body;
+    await writeLog(`📬 ПОВІДОМЛЕННЯ:\n👤 ${name}\n📞 ${phone}\n💬 ${comment}`, "MSG");
+    res.json({ success: true });
 });
 
-app.post("/api/news/add", upload.single("image"), async (req, res) => {
-    if (req.body.pass !== ADMIN_PASSWORD) return res.status(401).send("No access");
-    try {
-        let news = JSON.parse(fs.readFileSync(NEWS_FILE, "utf-8") || "[]");
-        news.unshift({
-            id: Date.now(),
-            date: new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Berlin' }),
-            title: req.body.title,
-            category: req.body.category,
-            content: req.body.content,
-            img: req.file ? `assets/news/${req.file.filename}` : "assets/img/auto-news.jpg"
-        });
-        fs.writeFileSync(NEWS_FILE, JSON.stringify(news.slice(0, 200), null, 2));
-        res.json({ success: true });
-    } catch (e) { res.status(500).json({ error: "error" }); }
+app.get("/api/news", (req, res) => res.json(JSON.parse(fs.readFileSync(NEWS_FILE, "utf-8") || "[]")));
+
+app.post("/api/news/add", upload.single("image"), (req, res) => {
+    if (req.body.pass !== ADMIN_PASSWORD) return res.status(401).send("No");
+    let news = JSON.parse(fs.readFileSync(NEWS_FILE, "utf-8") || "[]");
+    news.unshift({
+        id: Date.now(),
+        date: new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Berlin' }),
+        title: req.body.title,
+        category: req.body.category,
+        content: req.body.content,
+        img: req.file ? `assets/news/${req.file.filename}` : "assets/img/auto-news.jpg"
+    });
+    fs.writeFileSync(NEWS_FILE, JSON.stringify(news.slice(0, 200), null, 2));
+    res.json({ success: true });
 });
 
 app.post("/api/news/delete", (req, res) => {
-    if (req.body.pass !== ADMIN_PASSWORD) return res.status(401).send("No access");
+    if (req.body.pass !== ADMIN_PASSWORD) return res.status(401).send("No");
     let news = JSON.parse(fs.readFileSync(NEWS_FILE, "utf-8") || "[]");
     news = news.filter(n => n.id != req.body.id);
     fs.writeFileSync(NEWS_FILE, JSON.stringify(news, null, 2));
@@ -225,20 +197,13 @@ app.post("/api/news/delete", (req, res) => {
 });
 
 app.get('/api/admin/logs', (req, res) => {
-    if (req.query.pass !== ADMIN_PASSWORD) return res.status(401).send("No access");
+    if (req.query.pass !== ADMIN_PASSWORD) return res.status(401).send("No");
     res.type('text/plain').send(fs.readFileSync(LOG_FILE, "utf-8"));
 });
 
-// --- СТАТИКА ---
 app.use("/assets", express.static(path.join(__dirname, "assets")));
 app.use(express.static(path.join(__dirname, "public")));
 app.get("*", (req, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    writeLog("СЕРВЕР ПЕРЕЗАПУЩЕНО. ПОВНИЙ ФУНКЦІОНАЛ АКТИВНИЙ.", "SUCCESS");
-    // Пінгування для Render
-    setInterval(() => {
-        https.get(`https://${process.env.RENDER_EXTERNAL_HOSTNAME || 'localhost'}/`, () => {});
-    }, 13 * 60 * 1000);
-});
+app.listen(PORT, () => console.log(`СЕРВЕР ПРАЦЮЄ. ЗАХИСТ: 3 СПРОБИ.`));
