@@ -1,4 +1,3 @@
-// server.js (повний файл, вставити замість існуючого)
 import express from "express";
 import cors from "cors";
 import path from "path";
@@ -96,7 +95,7 @@ const writeLog = async (msg, type = "INFO") => {
   if (["ALERT", "WARN", "SUCCESS", "MSG"].includes(type)) await sendTelegram(`<b>ПОРТАЛ LIVE:</b>\n${msg}`);
 };
 
-// --- ЕКСТРАКТОР ЗОБРАЖЕНЬ (як раніше) ---
+// --- ЕКСТРАКТОР ЗОБРАЖЕНЬ ---
 function extractImage(item) {
   if (item.enclosure) {
     if (typeof item.enclosure === 'string') return item.enclosure;
@@ -171,8 +170,20 @@ async function autoFetchNews() {
         await writeLog(`Error fetching source ${s.n}: ${e.message || e}`, "WARN");
       }
     }
+    
     const now = Date.now();
-    news = news.filter(n => (now - n.id) < 172800000);
+    const twoDays = 172800000;
+    
+    // ВАЖЛИВО: Видаляємо старі ФОТОГРАФІЇ з диску
+    const toDelete = news.filter(n => (now - n.id) >= twoDays);
+    toDelete.forEach(n => {
+        if (n.img && n.img.startsWith('assets/news/')) {
+            const fp = path.join(__dirname, n.img);
+            if (fs.existsSync(fp)) { try { fs.unlinkSync(fp); } catch(e){} }
+        }
+    });
+
+    news = news.filter(n => (now - n.id) < twoDays);
     news.sort((a, b) => b.id - a.id);
     news = news.slice(0, 150);
     safeWriteJson(NEWS_FILE, news);
@@ -197,13 +208,11 @@ app.post("/api/taxi", async (req, res) => {
     await writeLog(`📩 ПОВІДОМЛЕННЯ:\n👤 ${name}\n📞 ${phone}\n💬 ${comment}`, "MSG");
     res.json({ success: true });
   } catch (e) {
-    await writeLog(`Taxi endpoint error: ${e.message || e}`, "WARN");
     res.status(500).json({ success: false });
   }
 });
 
 // --- API: адмін (захищені паролем) ---
-// Логін (як раніше)
 app.post('/api/admin/login', async (req, res) => {
   const ip = getClientIp(req);
   const now = Date.now();
@@ -216,10 +225,6 @@ app.post('/api/admin/login', async (req, res) => {
   }
   if (sec.blocked && sec.blocked[ip] && now < sec.blocked[ip]) {
     return res.status(403).json({ error: "БЛОК", showPedro: true });
-  }
-  if (!ADMIN_PASSWORD) {
-    await writeLog(`Спроба входу без налаштованого ADMIN_PASSWORD. IP: ${ip}`, "WARN");
-    return res.status(500).json({ error: "Server misconfiguration" });
   }
   if (req.body && req.body.pass === ADMIN_PASSWORD) {
     delete sec.attempts[ip];
@@ -239,37 +244,32 @@ app.post('/api/admin/login', async (req, res) => {
   }
 });
 
-// Завантаження зображення (multipart/form-data) — вимагає pass у полі body
 app.post('/api/admin/upload-image', upload.single('image'), async (req, res) => {
   try {
     const pass = req.body.pass || "";
     if (pass !== ADMIN_PASSWORD) {
-      // видаляємо файл якщо завантажено
       if (req.file && req.file.path) try { fs.unlinkSync(req.file.path); } catch {}
       return res.status(401).json({ error: "Unauthorized" });
     }
     if (!req.file) return res.status(400).json({ error: "No file" });
     const rel = path.join('assets/news', path.basename(req.file.path)).replace(/\\/g, '/');
-    await writeLog(`Завантажено зображення: ${rel}`, "MSG");
-    res.json({ success: true, path: `/${rel}` });
+    res.json({ success: true, path: rel }); // Повернув форматування шляху
   } catch (e) {
     res.status(500).json({ error: e.message || 'Upload failed' });
   }
 });
 
-// Додавання новини (захищено)
-app.post('/api/admin/add-news', async (req, res) => {
+// Додавання новини (перейменовано на /api/news/add для сумісності з адмінкою)
+app.post('/api/news/add', async (req, res) => {
   try {
     const { pass, title, category, content, link, img } = req.body || {};
     if (pass !== ADMIN_PASSWORD) return res.status(401).json({ error: "Unauthorized" });
     if (!title) return res.status(400).json({ error: "Title required" });
 
     const news = safeReadJson(NEWS_FILE, []);
-    const id = Date.now();
-    const date = new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Berlin' });
     const item = {
-      id,
-      date,
+      id: Date.now(),
+      date: new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Berlin' }),
       title: String(title).trim(),
       category: category || "Адмін",
       img: img || "assets/img/auto-news.jpg",
@@ -277,39 +277,58 @@ app.post('/api/admin/add-news', async (req, res) => {
       link: link || ""
     };
     news.unshift(item);
-    // зберегти максимум 150
     safeWriteJson(NEWS_FILE, news.slice(0, 150));
     await writeLog(`Додано новину: ${item.title}`, "SUCCESS");
     res.json({ success: true, item });
   } catch (e) {
-    await writeLog(`add-news error: ${e.message || e}`, "WARN");
-    res.status(500).json({ error: e.message || 'Failed' });
+    res.status(500).json({ error: 'Failed' });
   }
 });
 
-// Перегляд логів (захищено) — повертає останні N рядків
+// ВАЖЛИВО: Маршрут для видалення новин
+app.post('/api/news/delete', async (req, res) => {
+    if (req.body.pass !== ADMIN_PASSWORD) return res.status(401).send("No access");
+    try {
+        let news = safeReadJson(NEWS_FILE, []);
+        
+        // Видаляємо картинку з сервера, якщо вона була завантажена
+        const itemToDelete = news.find(n => n.id == req.body.id);
+        if (itemToDelete && itemToDelete.img && itemToDelete.img.startsWith('assets/news/')) {
+            const filePath = path.join(__dirname, itemToDelete.img);
+            if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        }
+
+        news = news.filter(n => n.id != req.body.id);
+        safeWriteJson(NEWS_FILE, news);
+        await writeLog(`Видалено новину ID: ${req.body.id}`, "WARN");
+        res.json({ success: true });
+    } catch (e) { 
+        res.status(500).json({ error: "Server error" }); 
+    }
+});
+
 app.get('/api/admin/logs', (req, res) => {
   const pass = req.query.pass || req.headers['x-admin-pass'] || "";
   if (pass !== ADMIN_PASSWORD) return res.status(401).json({ error: "Unauthorized" });
   try {
     const raw = fs.readFileSync(LOG_FILE, "utf-8");
-    const lines = raw.split(/\r?\n/).filter(Boolean);
-    const last = lines.slice(-500); // повернути до 500 останніх рядків
-    res.json({ success: true, lines: last });
+    res.type('text/plain').send(raw); // Повернув текстовий формат для консолі в адмінці
   } catch (e) {
-    res.status(500).json({ error: e.message || 'Failed to read logs' });
+    res.status(500).json({ error: 'Failed to read logs' });
   }
 });
 
-// Статика та fallback
 app.use("/assets", express.static(path.join(__dirname, "assets")));
 app.use(express.static(path.join(__dirname, "public")));
 app.get("*", (req, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
 
-// Старт сервера
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log("LIVE SERVER READY on port", PORT);
+  
+  // ВАЖЛИВО: Сповіщення в ТГ про запуск сервера
+  await writeLog(`🚀 СЕРВЕР ПЕРЕЗАПУЩЕНО\nСтатус: Активний`, "SUCCESS");
+
   const pingHostRaw = process.env.RENDER_EXTERNAL_HOSTNAME || process.env.PING_HOST || "";
   if (pingHostRaw) {
     const pingUrl = pingHostRaw.startsWith("http://") || pingHostRaw.startsWith("https://") ? pingHostRaw : `https://${pingHostRaw}`;
