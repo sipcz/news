@@ -3,230 +3,316 @@
 <head>
     <meta charset="UTF-8">
     <title>НОВИНИ LIVE — Дрезден</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#0057b7">
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         :root {
-            --p24-green: #4EA524; /* Фірмовий колір як у Привату */
-            --ua-blue: #0057b7;
-            --ua-yellow: #ffd700;
-            --bg-gray: #f5f5f5;
-            --card-white: #ffffff;
-            --text-main: #1a1a1a;
-            --border-color: #e0e0e0;
+            --ua-blue: #0057b7; --ua-yellow: #ffd700; --de-black: #222;
+            --soft-bg: #f4f7f9; --card-bg: #ffffff; --text-dark: #1a1a1a;
+            --border: #d1d9e0; --accent: #0057b7;
         }
 
         body.dark-mode {
-            --bg-gray: #0f0f0f; --card-white: #1a1a1a; --text-main: #f5f5f5; --border-color: #333;
+            --soft-bg: #0f172a; --card-bg: #1e293b; --text-dark: #f1f5f9;
+            --border: #334155; --de-black: #f8fafc;
         }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; background: var(--bg-gray); color: var(--text-main); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        * { box-sizing: border-box; transition: background 0.3s, color 0.3s; }
+        body {
+            margin: 0; background: var(--soft-bg); color: var(--text-dark);
+            font-family: 'Segoe UI', Roboto, sans-serif; line-height: 1.5;
+        }
 
-        /* HEADER В СТИЛІ ДОДАТКУ */
         nav {
-            background: var(--card-white);
-            height: 60px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 15px;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-            border-bottom: 1px solid var(--border-color);
+            background: var(--card-bg); border-top: 4px solid var(--ua-blue);
+            border-bottom: 3px solid var(--ua-yellow); padding: 10px 5%;
+            display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
 
-        .logo { font-size: 1.2rem; font-weight: 800; cursor: pointer; text-decoration: none; display: flex; align-items: center; }
-        .logo .live { color: var(--ua-blue); }
-        .logo .city { color: var(--text-main); margin-left: 4px; }
+        .nav-left { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
+        .logo { font-size: 1.4rem; font-weight: 900; text-decoration: none; display: flex; align-items: center; cursor: pointer; }
+        .logo .live { color: var(--ua-blue); text-transform: uppercase; }
+        .logo .city { color: var(--de-black); margin-left: 4px; font-weight: 400; }
 
-        .nav-right { display: flex; gap: 12px; align-items: center; }
+        .info-bar { display: flex; gap: 10px; flex-wrap: wrap; }
+        .badge { font-size: 0.8rem; padding: 4px 10px; background: rgba(0,0,0,0.05); border-radius: 6px; display: flex; align-items: center; gap: 5px; }
+        body.dark-mode .badge { background: rgba(255,255,255,0.1); }
 
-        /* КНОПКА ЯК У ДОДАТКУ */
-        .btn-action {
-            background: var(--p24-green);
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-weight: 700;
-            font-size: 0.8rem;
-            cursor: pointer;
-        }
+        .nav-right { display: flex; align-items: center; gap: 10px; }
+        .btn-icon { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-dark); }
+        .btn-contact { background: var(--ua-blue); color: #fff; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.75rem; text-transform: uppercase; }
 
-        /* КОНТЕЙНЕР */
-        .container { max-width: 1100px; margin: 0 auto; padding: 15px; }
-        
-        /* СІТКА НОВИН */
-        .news-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
+        .container { max-width: 1200px; margin: 25px auto; padding: 0 15px; }
+        .news-grid { display: grid; grid-template-columns: 2.8fr 1.2fr; gap: 25px; }
 
-        /* КАРТКА НОВИНИ */
+        @media (max-width: 900px) { .news-grid { grid-template-columns: 1fr; } .info-bar { display: none; } }
+
+        .main-feed { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
+
         .news-card {
-            background: var(--card-white);
-            border-radius: 16px;
-            overflow: hidden;
-            border: 1px solid var(--border-color);
-            cursor: pointer;
-            transition: transform 0.2s;
+            background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border);
+            overflow: hidden; display: flex; flex-direction: column; cursor: pointer;
         }
-        .news-card:active { transform: scale(0.98); }
+        .news-card:hover { border-color: var(--ua-blue); transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        
+        .img-ratio { width: 100%; height: 160px; background: #e2e8f0; position: relative; overflow: hidden; }
+        .news-card img { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.4s; }
+        .news-card img.loaded { opacity: 1; }
 
-        .img-box { width: 100%; height: 170px; background: #eee; position: relative; }
-        .img-box img { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: 0.3s; }
-        .img-box img.loaded { opacity: 1; }
+        .news-content { padding: 15px; flex-grow: 1; }
+        .news-tag { color: #ef4444; font-weight: 800; font-size: 0.65rem; text-transform: uppercase; margin-bottom: 5px; display: block; }
+        .news-card h3 { margin: 0 0 10px 0; font-size: 1.1rem; line-height: 1.3; }
 
-        .news-info { padding: 15px; }
-        .news-info h3 { margin: 0 0 8px 0; font-size: 1rem; line-height: 1.4; }
-        .news-meta { font-size: 0.75rem; color: #888; display: flex; justify-content: space-between; }
+        .sidebar-section { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); padding: 15px; margin-bottom: 20px; }
+        .sidebar-section h4 { margin-top: 0; border-bottom: 2px solid var(--ua-yellow); display: inline-block; margin-bottom: 15px; color: var(--ua-blue); }
+        
+        .emergency-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-weight: bold; }
+        .emergency-item span { color: #ef4444; }
 
-        /* SKELETON (ЕФЕКТ ЗАВАНТАЖЕННЯ ЯК У ПРИВАТУ) */
-        .skeleton { animation: pulse 1.5s infinite ease-in-out; background: #e0e0e0; }
-        @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
+        .link-item { display: block; padding: 8px 0; color: var(--text-dark); text-decoration: none; font-size: 0.9rem; border-bottom: 1px solid var(--border); cursor: pointer; }
+        .link-item:hover { color: var(--ua-blue); padding-left: 5px; }
 
-        /* SMART BANNER */
-        #smart-banner {
-            background: #fff; padding: 10px 15px; display: flex; align-items: center; 
-            justify-content: space-between; border-bottom: 1px solid #ddd;
-            font-size: 0.9rem; font-weight: bold;
-        }
-
-        /* МОДАЛКА */
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 2000; backdrop-filter: blur(5px); }
-        .modal-content { 
-            background: var(--card-white); width: 100%; max-width: 500px; 
-            margin: 0 auto; height: 100%; overflow-y: auto; position: relative;
-            padding: 20px; border-radius: 0; 
-        }
-        @media (min-width: 600px) {
-            .modal-content { height: auto; margin: 40px auto; border-radius: 20px; }
-        }
-
+        .transport-btn { display: block; background: var(--ua-blue); color: white; text-align: center; padding: 10px; border-radius: 8px; text-decoration: none; font-weight: bold; margin-top: 10px; font-size: 0.85rem; }
+        
         #floating-sos {
-            position: fixed; bottom: 20px; right: 20px; width: 56px; height: 56px;
-            background: #ff3b30; color: white; border-radius: 50%;
+            position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px;
+            background: #ef4444; color: white; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 4px 12px rgba(255,59,48,0.4); z-index: 100;
+            font-size: 24px; cursor: pointer; z-index: 999;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+            animation: pulse-red 2s infinite;
         }
+        @keyframes pulse-red {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { transform: scale(1.1); box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; backdrop-filter:blur(5px); padding:15px; }
+        .modal-content { background:var(--card-bg); max-width:600px; margin:30px auto; border-radius:15px; padding:25px; position:relative; overflow-y: auto; max-height: 85vh; }
+        .close-btn { position:absolute; right:20px; top:15px; font-size:24px; cursor:pointer; }
+
+        footer { text-align: center; padding: 40px; color: #888; border-top: 1px solid var(--border); }
     </style>
 </head>
 <body>
 
-<div id="smart-banner">
-    <span>📱 Використовуйте LIVE Дрезден як додаток</span>
-    <button class="btn-action" style="background:#000" onclick="alert('Натисніть Поширити -> Додати на початковий екран')">ВСТАНОВИТИ</button>
-</div>
-
 <nav>
-    <a href="/" class="logo"><span class="live">LIVE</span><span class="city">Дрезден</span></a>
+    <div class="nav-left">
+        <div onclick="window.location.reload()" class="logo"><span class="live">LIVE</span><span class="city">Дрезден</span></div>
+        <div class="info-bar">
+            <div class="badge" id="currency">€ .. ₴</div>
+            <div class="badge" id="clock">🇩🇪 00:00:00</div>
+            <div class="badge" id="clock-ua">🇺🇦 00:00:00</div>
+        </div>
+    </div>
     <div class="nav-right">
-        <div id="clock" style="font-size: 0.8rem; font-weight: bold;">00:00</div>
-        <button class="btn-action" onclick="toggleModal('contactModal', true)">ПІДТРИМКА</button>
+        <button class="btn-icon" onclick="toggleTheme()" id="themeToggle">🌓</button>
+        <button class="btn-contact" onclick="toggleModal('contactModal', true)">Написати</button>
     </div>
 </nav>
 
 <div class="container">
-    <div style="display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 10px;">
-        <div class="btn-action" style="background: white; color: black; border: 1px solid #ddd; white-space: nowrap;" id="currency">€ ...</div>
-        <div class="btn-action" style="background: white; color: black; border: 1px solid #ddd; white-space: nowrap;" id="shopStatus">Магазини...</div>
-    </div>
+    <div class="news-grid">
+        <main>
+            <div id="feedTitle" style="margin-bottom: 15px; font-weight: bold; display: none;"></div>
+            <div class="main-feed" id="newsGrid">Завантаження...</div>
+        </main>
 
-    <main class="news-grid" id="newsGrid">
-        <div class="news-card"><div class="img-box skeleton"></div><div class="news-info"><div class="skeleton" style="height:20px; width:80%;"></div></div></div>
-        <div class="news-card"><div class="img-box skeleton"></div><div class="news-info"><div class="skeleton" style="height:20px; width:80%;"></div></div></div>
-        <div class="news-card"><div class="img-box skeleton"></div><div class="news-info"><div class="skeleton" style="height:20px; width:80%;"></div></div></div>
-    </main>
+        <aside>
+            <div class="sidebar-section">
+                <h4>📘 Довідник емігранта</h4>
+                <div class="link-item" onclick="filterByCategory('Еміграція')">🛡️ Параграф 24: Деталі</div>
+                <div class="link-item" onclick="filterByCategory('Еміграція')">🏠 Пошук житла (Wohnung)</div>
+                <div class="link-item" onclick="filterByCategory('Еміграція')">💼 Робота та Jobcenter</div>
+                <div class="link-item" onclick="filterByCategory('Еміграція')">🏥 Страхування</div>
+            </div>
+
+            <div class="sidebar-section">
+                <h4>🛒 Магазини сьогодні</h4>
+                <div id="status-content" style="padding: 10px; border-radius: 8px; font-weight: bold; text-align: center; font-size: 0.9rem;">
+                    Завантаження...
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h4>⛰️ Туризм у Саксонії</h4>
+                <a href="https://www.saechsische-schweiz.de/" target="_blank" class="link-item">⛰️ Саксонська Швейцарія</a>
+                <a href="https://www.schloesserland-sachsen.de/" target="_blank" class="link-item">🏰 Замки Саксонії</a>
+            </div>
+
+            <div class="sidebar-section" style="border: 2px solid var(--ua-blue);">
+                <h4>🏗️ Послуги Майстра</h4>
+                <p style="font-size: 0.85rem; font-weight: bold;">Монтаж металоконструкцій</p>
+                <a href="#" onclick="toggleModal('contactModal', true)" class="transport-btn">📩 Замовити розрахунок</a>
+            </div>
+
+            <div class="sidebar-section">
+                <h4>Важливі контакти</h4>
+                <div class="emergency-item">Поліція <span>110</span></div>
+                <div class="emergency-item">Швидка / Пожежна <span>112</span></div>
+                <div class="emergency-item">Черговий лікар <span>116 117</span></div>
+            </div>
+
+            <div class="sidebar-section">
+                <h4>Останні новини</h4>
+                <div id="urgentFeed"></div>
+            </div>
+        </aside>
+    </div>
 </div>
 
-<div id="floating-sos" onclick="alert('Швидка: 112, Поліція: 110')">🆘</div>
+<div id="floating-sos" title="Екстрена допомога" onclick="alert('Швидка: 112\nПоліція: 110\nЧерговий лікар: 116 117')">🆘</div>
 
 <div id="newsModal" class="modal" onclick="closeByOutside(event)">
     <div class="modal-content">
-        <span onclick="toggleModal('newsModal', false)" style="float:right; cursor:pointer; font-size:1.5rem;">&times;</span>
-        <img id="mImg" style="width:100%; border-radius:12px; margin: 15px 0; display:none;">
+        <span class="close-btn" onclick="toggleModal('newsModal', false)">&times;</span>
+        <img id="mImg" style="width:100%; border-radius:10px; margin-bottom:15px; display:none;">
         <h2 id="mTitle"></h2>
-        <p id="mDate" style="color:#888; font-size:0.8rem;"></p>
-        <div id="mText" style="white-space: pre-wrap; line-height:1.6;"></div>
+        <div id="mDate" style="font-size:0.8rem; color:#888; margin-bottom:15px;"></div>
+        <div id="mText" style="white-space: pre-wrap; line-height: 1.6;"></div>
     </div>
 </div>
 
 <div id="contactModal" class="modal" onclick="closeByOutside(event)">
-    <div class="modal-content">
-        <span onclick="toggleModal('contactModal', false)" style="float:right; cursor:pointer; font-size:1.5rem;">&times;</span>
+    <div class="modal-content" style="max-width: 450px;">
+        <span class="close-btn" onclick="toggleModal('contactModal', false)">&times;</span>
         <h3>Зворотний зв'язок</h3>
         <form id="contactForm">
-            <input type="text" name="userName" required placeholder="Ваше ім'я" style="width:100%; padding:12px; margin-bottom:10px; border: 1px solid #ddd; border-radius: 10px;">
-            <input type="text" name="userContact" required placeholder="Ваш контакт" style="width:100%; padding:12px; margin-bottom:10px; border: 1px solid #ddd; border-radius: 10px;">
-            <textarea name="message" rows="5" required placeholder="Чим ми можемо допомогти?" style="width:100%; padding:12px; margin-bottom:10px; border: 1px solid #ddd; border-radius: 10px;"></textarea>
-            <button type="submit" class="btn-action" style="width:100%; padding:15px; font-size:1rem;">НАДІСЛАТИ ПОВІДОМЛЕННЯ</button>
+            <input type="text" name="userName" required placeholder="Ваше ім'я" style="width:100%; padding:10px; margin-bottom:10px; border-radius:6px; border:1px solid var(--border); background: var(--card-bg); color: var(--text-dark);">
+            <input type="text" name="userContact" required placeholder="Телефон або Email" style="width:100%; padding:10px; margin-bottom:10px; border-radius:6px; border:1px solid var(--border); background: var(--card-bg); color: var(--text-dark);">
+            <textarea name="message" rows="4" required placeholder="Ваше повідомлення..." style="width:100%; padding:10px; margin-bottom:10px; border-radius:6px; border:1px solid var(--border); background: var(--card-bg); color: var(--text-dark);"></textarea>
+            <div style="margin-bottom:10px;">Код: <span id="captcha-code" style="font-weight:bold; color: var(--ua-blue);"></span> <input type="text" name="captcha" style="width:60px; padding: 5px;"></div>
+            <button type="submit" class="btn-contact" id="submitBtn" style="width:100%; padding:12px;">Надіслати</button>
         </form>
     </div>
 </div>
 
+<footer>&copy; 2026 LIVE Дрезден</footer>
+
 <script>
     let allNews = [];
+    let captcha = "";
 
     function updateClock() {
         const now = new Date();
-        document.getElementById('clock').innerText = now.toLocaleTimeString('uk-UA', { timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit' });
+        document.getElementById('clock').innerText = '🇩🇪 ' + now.toLocaleTimeString('uk-UA', { timeZone: 'Europe/Berlin' });
+        document.getElementById('clock-ua').innerText = '🇺🇦 ' + now.toLocaleTimeString('uk-UA', { timeZone: 'Europe/Kyiv' });
     }
     setInterval(updateClock, 1000);
+
+    function checkShops() {
+        const now = new Date();
+        const day = now.getDay();
+        const hour = now.getHours();
+        const el = document.getElementById('status-content');
+        if (day === 0) { el.innerText = "🔴 ЗАЧИНЕНО (Неділя)"; el.style.background = "#fee2e2"; el.style.color = "#ef4444"; }
+        else if (hour >= 20 || hour < 7) { el.innerText = "🟠 ЗАЧИНЕНО (Ніч)"; el.style.background = "#fff7ed"; el.style.color = "#ea580c"; }
+        else { el.innerText = "🟢 ВІДЧИНЕНО"; el.style.background = "#dcfce7"; el.style.color = "#16a34a"; }
+    }
 
     async function loadContent() {
         try {
             const res = await fetch('/api/news');
             allNews = await res.json();
             renderNews(allNews);
-        } catch (e) { console.log("Error loading"); }
+            
+            const urgent = document.getElementById('urgentFeed');
+            urgent.innerHTML = allNews.slice(0, 5).map((n, i) => `
+                <div class="link-item" onclick="openNewsByIndex(${i})">
+                    <div style="font-size:0.85rem; font-weight:500;">${n.title}</div>
+                </div>
+            `).join('');
+        } catch (e) { console.log("Помилка завантаження"); }
     }
 
     function renderNews(news) {
         const grid = document.getElementById('newsGrid');
-        grid.innerHTML = news.map((n, i) => `
-            <div class="news-card" onclick="openNewsByIndex(${i})">
-                <div class="img-box">
-                    <img src="${n.img || 'assets/img/auto-news.jpg'}" onload="this.classList.add('loaded')" onerror="this.style.display='none'">
+        grid.innerHTML = news.map((n, i) => {
+            const hasPhoto = n.img && n.img !== "assets/img/auto-news.jpg";
+            return `
+                <div class="news-card" onclick="openNewsByIndex(${i})">
+                    <div class="img-ratio">
+                        ${hasPhoto ? `<img src="${n.img}" onload="this.classList.add('loaded')" onerror="this.style.display='none'">` : ''}
+                    </div>
+                    <div class="news-content">
+                        <span class="news-tag">${n.category || 'Дрезден'}</span>
+                        <h3>${n.title}</h3>
+                        <div style="font-size:0.7rem; color:#888;">${n.date}</div>
+                    </div>
                 </div>
-                <div class="news-info">
-                    <div class="news-meta"><span>${n.category}</span><span>${n.date}</span></div>
-                    <h3>${n.title}</h3>
-                </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
-    function openNewsByIndex(i) {
-        const n = allNews[i];
+    function openNewsByIndex(index) {
+        const n = allNews[index];
         if(!n) return;
         const img = document.getElementById('mImg');
-        img.src = n.img || '';
-        img.style.display = n.img ? 'block' : 'none';
+        if (n.img && n.img !== "assets/img/auto-news.jpg") { img.src = n.img; img.style.display = 'block'; }
+        else { img.style.display = 'none'; }
         document.getElementById('mTitle').innerText = n.title;
         document.getElementById('mDate').innerText = n.date;
         document.getElementById('mText').innerText = n.content;
         toggleModal('newsModal', true);
     }
 
-    function toggleModal(id, show) {
-        document.getElementById(id).style.display = show ? 'block' : 'none';
+    async function filterByCategory(cat) {
+        const filtered = allNews.filter(n => n.category === cat);
+        const titleEl = document.getElementById('feedTitle');
+        titleEl.innerText = `Рубрика: ${cat}`;
+        titleEl.style.display = 'block';
+        renderNews(filtered);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    function closeByOutside(e) { if (e.target.classList.contains('modal')) { toggleModal('newsModal', false); toggleModal('contactModal', false); } }
+    function toggleTheme() {
+        document.body.classList.toggle('dark-mode');
+        localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
+    }
 
     async function fetchCurrency() {
         try {
             const res = await fetch('https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?valcode=EUR&json');
             const data = await res.json();
-            document.getElementById('currency').innerText = `€ ${data[0].rate.toFixed(2)} ₴`;
+            document.getElementById('currency').innerHTML = `€ <b>${data[0].rate.toFixed(2)} ₴</b>`;
         } catch (e) {}
     }
 
+    function toggleModal(id, show) {
+        document.getElementById(id).style.display = show ? 'block' : 'none';
+        if(id === 'contactModal' && show) genCaptcha();
+    }
+
+    function genCaptcha() {
+        captcha = Math.random().toString(36).substring(2, 6).toUpperCase();
+        document.getElementById('captcha-code').innerText = captcha;
+    }
+
+    document.getElementById('contactForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('submitBtn');
+        const fd = new FormData(e.target);
+        const data = Object.fromEntries(fd);
+        if (data.captcha.toUpperCase() !== captcha) { alert("Невірний код!"); return; }
+        
+        btn.innerText = "Надсилаю..."; btn.disabled = true;
+        try {
+            const res = await fetch('/api/taxi', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: data.userName, phone: data.userContact, comment: data.message })
+            });
+            if (res.ok) { alert("✅ Надіслано!"); e.target.reset(); toggleModal('contactModal', false); }
+        } catch (err) { alert("Помилка"); }
+        btn.innerText = "Надіслати"; btn.disabled = false;
+    };
+
+    function closeByOutside(e) { if (e.target.classList.contains('modal')) { toggleModal('newsModal', false); toggleModal('contactModal', false); } }
+
     window.onload = () => {
-        updateClock(); fetchCurrency(); loadContent();
+        if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
+        updateClock(); fetchCurrency(); loadContent(); checkShops();
     };
 </script>
 </body>
