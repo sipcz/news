@@ -44,94 +44,55 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Multer для завантажень
+// Налаштування завантаження фото
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, UPLOADS_DIR),
   filename: (req, file, cb) => {
     const ext = path.extname(file.originalname) || ".jpg";
-    const name = `img_${Date.now()}${Math.floor(Math.random()*1000)}${ext}`;
-    cb(null, name);
+    cb(null, `img_${Date.now()}${Math.floor(Math.random()*1000)}${ext}`);
   }
 });
-const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } }); // до 5MB
+const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
 
 // --- УТИЛІТИ ---
 const safeReadJson = (file, fallback = []) => {
-  try {
-    const raw = fs.readFileSync(file, "utf-8");
-    if (!raw) return fallback;
-    return JSON.parse(raw);
-  } catch (e) {
-    try { fs.writeFileSync(file, JSON.stringify(fallback, null, 2), "utf-8"); } catch {}
-    return fallback;
-  }
+  try { return JSON.parse(fs.readFileSync(file, "utf-8")); } 
+  catch (e) { return fallback; }
 };
 const safeWriteJson = (file, data) => {
   try { fs.writeFileSync(file, JSON.stringify(data, null, 2), "utf-8"); return true; }
-  catch (e) { try { fs.appendFileSync(LOG_FILE, `[${new Date().toISOString()}] [ERROR] Write JSON failed: ${e.message}\n`); } catch {} return false; }
-};
-const getClientIp = (req) => {
-  const xff = req.headers['x-forwarded-for'];
-  if (xff && typeof xff === 'string') return xff.split(',')[0].trim();
-  return req.socket && req.socket.remoteAddress ? req.socket.remoteAddress : req.ip;
+  catch (e) { return false; }
 };
 const getSecData = () => safeReadJson(BLOCKS_FILE, { attempts: {}, blocked: {} });
 const saveSecData = (d) => safeWriteJson(BLOCKS_FILE, d);
 
-const sendTelegram = async (text) => {
-  if (!BOT_TOKEN || !CHAT_ID) return;
-  try {
-    await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-      chat_id: CHAT_ID, text, parse_mode: "HTML"
-    }, { timeout: 8000 });
-  } catch (e) { try { fs.appendFileSync(LOG_FILE, `[${new Date().toISOString()}] [WARN] Telegram send failed: ${e.message}\n`); } catch {} }
-};
-
+// Логування в консоль, у файл і в Telegram
 const writeLog = async (msg, type = "INFO") => {
-  try {
-    const time = new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Berlin' });
-    fs.appendFileSync(LOG_FILE, `[${time}] [${type}] ${msg}\n`);
-  } catch (e) {}
-  if (["ALERT", "WARN", "SUCCESS", "MSG"].includes(type)) await sendTelegram(`<b>ПОРТАЛ LIVE:</b>\n${msg}`);
+  const time = new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Berlin' });
+  const logStr = `[${time}] [${type}] ${msg}\n`;
+  console.log(logStr.trim()); // Щоб бачити в Render Logs
+  try { fs.appendFileSync(LOG_FILE, logStr); } catch (e) {}
+
+  if (["ALERT", "WARN", "SUCCESS", "MSG"].includes(type)) {
+    try {
+      await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+        chat_id: CHAT_ID, text: `<b>ПОРТАЛ LIVE:</b>\n${msg}`, parse_mode: "HTML"
+      });
+    } catch (e) {}
+  }
 };
 
 // --- ЕКСТРАКТОР ЗОБРАЖЕНЬ ---
 function extractImage(item) {
-  if (item.enclosure) {
-    if (typeof item.enclosure === 'string') return item.enclosure;
-    if (Array.isArray(item.enclosure) && item.enclosure.length) {
-      const e = item.enclosure[0];
-      if (typeof e === 'string') return e;
-      if (e.url) return e.url;
-      if (e['@url']) return e['@url'];
-    }
-    if (typeof item.enclosure === 'object') {
-      if (item.enclosure.url) return item.enclosure.url;
-      if (item.enclosure['@url']) return item.enclosure['@url'];
-    }
-  }
-  const mc = item.mediaContent || item['media:content'];
-  if (mc) {
-    const candidate = Array.isArray(mc) ? mc[0] : mc;
-    if (candidate) {
-      if (candidate.$ && candidate.$.url) return candidate.$.url;
-      if (candidate.url) return candidate.url;
-      if (candidate['@url']) return candidate['@url'];
-    }
-  }
-  if (item.image) {
-    if (typeof item.image === 'string') return item.image;
-    if (item.image.url) return item.image.url;
-    if (item.image.src) return item.image.src;
-    if (item.image['@url']) return item.image['@url'];
-  }
+  if (item.enclosure && item.enclosure.url) return item.enclosure.url;
+  if (item.mediaContent && item.mediaContent.$ && item.mediaContent.$.url) return item.mediaContent.$.url;
   const body = (item.content || "") + (item.contentEncoded || "") + (item.contentSnippet || "");
   const m = body.match(/<img[^>]+src=(?:'|")([^'">]+)(?:'|")/i);
   if (m && m[1]) return m[1];
   return "assets/img/auto-news.jpg";
 }
 
-// --- ГРАБЕР (без ZAXID.NET) ---
+// --- ГРАБЕР НОВИН ---
 async function autoFetchNews() {
   try {
     let news = safeReadJson(NEWS_FILE, []);
@@ -145,126 +106,75 @@ async function autoFetchNews() {
       try {
         const res = await axios.get(s.u, { timeout: 12000, headers: { 'User-Agent': 'Mozilla/5.0' } });
         const feed = await parser.parseString(res.data);
-        if (!feed || !Array.isArray(feed.items)) continue;
         feed.items.forEach(item => {
-          try {
-            const title = (item.title || "").trim();
-            if (!title) return;
-            if (news.some(n => n.title === title)) return;
-            const img = extractImage(item);
-            const pubTime = item.pubDate ? new Date(item.pubDate).getTime() : Date.now();
-            const dateStr = new Date(pubTime).toLocaleString('uk-UA', { timeZone: 'Europe/Berlin' });
-            const contentSnippet = (item.contentSnippet || item.content || item.contentEncoded || "").replace(/<[^>]*>?/gm, '');
-            news.push({
-              id: pubTime,
-              date: dateStr,
-              title,
-              category: s.n,
-              img,
-              content: contentSnippet.substring(0, 450) + (contentSnippet.length > 450 ? "..." : ""),
-              link: item.link || ""
-            });
-          } catch (inner) {}
+          const title = (item.title || "").trim();
+          if (!title || news.some(n => n.title === title)) return;
+          news.push({
+            id: new Date(item.pubDate || Date.now()).getTime(),
+            date: new Date(item.pubDate || Date.now()).toLocaleString('uk-UA', { timeZone: 'Europe/Berlin' }),
+            title, category: s.n, img: extractImage(item),
+            content: (item.contentSnippet || item.content || "").replace(/<[^>]*>?/gm, '').substring(0, 450) + "...",
+            link: item.link || ""
+          });
         });
-      } catch (e) {
-        await writeLog(`Error fetching source ${s.n}: ${e.message || e}`, "WARN");
-      }
+      } catch (e) { }
     }
     
     const now = Date.now();
     const twoDays = 172800000;
     
-    // ВАЖЛИВО: Видаляємо старі ФОТОГРАФІЇ з диску
-    const toDelete = news.filter(n => (now - n.id) >= twoDays);
-    toDelete.forEach(n => {
+    // Чистимо старі фотографії
+    news.filter(n => (now - n.id) >= twoDays).forEach(n => {
         if (n.img && n.img.startsWith('assets/news/')) {
             const fp = path.join(__dirname, n.img);
-            if (fs.existsSync(fp)) { try { fs.unlinkSync(fp); } catch(e){} }
+            if (fs.existsSync(fp)) fs.unlinkSync(fp);
         }
     });
 
-    news = news.filter(n => (now - n.id) < twoDays);
-    news.sort((a, b) => b.id - a.id);
-    news = news.slice(0, 150);
+    news = news.filter(n => (now - n.id) < twoDays).sort((a, b) => b.id - a.id).slice(0, 150);
     safeWriteJson(NEWS_FILE, news);
-  } catch (e) {
-    await writeLog(`autoFetchNews failed: ${e.message || e}`, "WARN");
-  }
+  } catch (e) { }
 }
 setInterval(autoFetchNews, 20 * 60 * 1000);
 setTimeout(autoFetchNews, 3000);
 
-// --- API: публічні ---
-app.get("/api/news", (req, res) => {
-  const data = safeReadJson(NEWS_FILE, []);
-  res.json(data);
-});
-
+// --- ПУБЛІЧНІ API ---
+app.get("/api/news", (req, res) => res.json(safeReadJson(NEWS_FILE, [])));
 app.post("/api/taxi", async (req, res) => {
-  try {
-    const name = req.body.name || "Невідомо";
-    const phone = req.body.phone || "Невідомо";
-    const comment = req.body.comment || "";
-    await writeLog(`📩 ПОВІДОМЛЕННЯ:\n👤 ${name}\n📞 ${phone}\n💬 ${comment}`, "MSG");
-    res.json({ success: true });
-  } catch (e) {
-    res.status(500).json({ success: false });
-  }
+  await writeLog(`📩 ПОВІДОМЛЕННЯ:\n👤 ${req.body.name}\n📞 ${req.body.phone}\n💬 ${req.body.comment}`, "MSG");
+  res.json({ success: true });
 });
 
-// --- API: адмін (захищені паролем) ---
+// --- АДМІНКА: ЛОГІН ---
 app.post('/api/admin/login', async (req, res) => {
-  const ip = getClientIp(req);
+  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
   const now = Date.now();
   const sec = getSecData();
 
-  if (sec.blocked && sec.blocked[ip] && now >= sec.blocked[ip]) {
-    delete sec.blocked[ip];
-    delete sec.attempts[ip];
-    saveSecData(sec);
-  }
-  if (sec.blocked && sec.blocked[ip] && now < sec.blocked[ip]) {
-    return res.status(403).json({ error: "БЛОК", showPedro: true });
-  }
-  if (req.body && req.body.pass === ADMIN_PASSWORD) {
-    delete sec.attempts[ip];
-    saveSecData(sec);
-    await writeLog(`Успішний вхід. IP: ${ip}`, "SUCCESS");
+  if (sec.blocked[ip] && now < sec.blocked[ip]) return res.status(403).json({ error: "БЛОК", showPedro: true });
+  if (sec.blocked[ip] && now >= sec.blocked[ip]) { delete sec.blocked[ip]; delete sec.attempts[ip]; saveSecData(sec); }
+
+  if (req.body.pass === ADMIN_PASSWORD) {
+    delete sec.attempts[ip]; saveSecData(sec);
+    await writeLog(`🔑 Вхід в адмінку. IP: ${ip}`, "SUCCESS");
     return res.json({ success: true });
   } else {
     sec.attempts[ip] = (sec.attempts[ip] || 0) + 1;
     if (sec.attempts[ip] >= 3) {
       sec.blocked[ip] = now + 3600000;
       await writeLog(`🚨 БАН IP ${ip} (3 спроби)`, "ALERT");
-      delete sec.attempts[ip];
     }
     saveSecData(sec);
     if (sec.blocked[ip]) return res.status(403).json({ error: "БЛОК", showPedro: true });
-    return res.status(401).json({ error: `Спроба ${sec.attempts[ip] || 0} з 3` });
+    return res.status(401).json({ error: `Невірний пароль!` });
   }
 });
 
-app.post('/api/admin/upload-image', upload.single('image'), async (req, res) => {
+// --- АДМІНКА: ДОДАТИ НОВИНУ (Об'єднано для зручності) ---
+app.post('/api/news/add', upload.single('image'), async (req, res) => {
   try {
-    const pass = req.body.pass || "";
-    if (pass !== ADMIN_PASSWORD) {
-      if (req.file && req.file.path) try { fs.unlinkSync(req.file.path); } catch {}
-      return res.status(401).json({ error: "Unauthorized" });
-    }
-    if (!req.file) return res.status(400).json({ error: "No file" });
-    const rel = path.join('assets/news', path.basename(req.file.path)).replace(/\\/g, '/');
-    res.json({ success: true, path: rel }); // Повернув форматування шляху
-  } catch (e) {
-    res.status(500).json({ error: e.message || 'Upload failed' });
-  }
-});
-
-// Додавання новини (перейменовано на /api/news/add для сумісності з адмінкою)
-app.post('/api/news/add', async (req, res) => {
-  try {
-    const { pass, title, category, content, link, img } = req.body || {};
+    const { pass, title, category, content } = req.body;
     if (pass !== ADMIN_PASSWORD) return res.status(401).json({ error: "Unauthorized" });
-    if (!title) return res.status(400).json({ error: "Title required" });
 
     const news = safeReadJson(NEWS_FILE, []);
     const item = {
@@ -272,52 +182,45 @@ app.post('/api/news/add', async (req, res) => {
       date: new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Berlin' }),
       title: String(title).trim(),
       category: category || "Адмін",
-      img: img || "assets/img/auto-news.jpg",
-      content: (content || "").toString().substring(0, 1000),
-      link: link || ""
+      img: req.file ? `assets/news/${req.file.filename}` : "assets/img/auto-news.jpg",
+      content: String(content).trim().substring(0, 1000)
     };
     news.unshift(item);
     safeWriteJson(NEWS_FILE, news.slice(0, 150));
-    await writeLog(`Додано новину: ${item.title}`, "SUCCESS");
-    res.json({ success: true, item });
-  } catch (e) {
-    res.status(500).json({ error: 'Failed' });
-  }
+    await writeLog(`✅ Додано новину: ${item.title}`, "SUCCESS");
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: 'Помилка збереження' }); }
 });
 
-// ВАЖЛИВО: Маршрут для видалення новин
+// --- АДМІНКА: ВИДАЛИТИ НОВИНУ ---
 app.post('/api/news/delete', async (req, res) => {
-    if (req.body.pass !== ADMIN_PASSWORD) return res.status(401).send("No access");
-    try {
-        let news = safeReadJson(NEWS_FILE, []);
-        
-        // Видаляємо картинку з сервера, якщо вона була завантажена
-        const itemToDelete = news.find(n => n.id == req.body.id);
-        if (itemToDelete && itemToDelete.img && itemToDelete.img.startsWith('assets/news/')) {
-            const filePath = path.join(__dirname, itemToDelete.img);
-            if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-        }
-
-        news = news.filter(n => n.id != req.body.id);
-        safeWriteJson(NEWS_FILE, news);
-        await writeLog(`Видалено новину ID: ${req.body.id}`, "WARN");
-        res.json({ success: true });
-    } catch (e) { 
-        res.status(500).json({ error: "Server error" }); 
-    }
-});
-
-app.get('/api/admin/logs', (req, res) => {
-  const pass = req.query.pass || req.headers['x-admin-pass'] || "";
-  if (pass !== ADMIN_PASSWORD) return res.status(401).json({ error: "Unauthorized" });
+  if (req.body.pass !== ADMIN_PASSWORD) return res.status(401).json({ error: "Unauthorized" });
   try {
-    const raw = fs.readFileSync(LOG_FILE, "utf-8");
-    res.type('text/plain').send(raw); // Повернув текстовий формат для консолі в адмінці
-  } catch (e) {
-    res.status(500).json({ error: 'Failed to read logs' });
-  }
+    let news = safeReadJson(NEWS_FILE, []);
+    const idToDelete = String(req.body.id);
+    
+    // Видаляємо фото з диска
+    const item = news.find(n => String(n.id) === idToDelete);
+    if (item && item.img && item.img.startsWith('assets/news/')) {
+        const fp = path.join(__dirname, item.img);
+        if (fs.existsSync(fp)) fs.unlinkSync(fp);
+    }
+
+    news = news.filter(n => String(n.id) !== idToDelete);
+    safeWriteJson(NEWS_FILE, news);
+    await writeLog(`🗑️ Видалено новину ID: ${idToDelete}`, "WARN");
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: "Server error" }); }
 });
 
+// --- АДМІНКА: ЧИТАТИ ЛОГИ ---
+app.get('/api/admin/logs', (req, res) => {
+  if (req.query.pass !== ADMIN_PASSWORD) return res.status(401).send("No access");
+  try { res.type('text/plain').send(fs.readFileSync(LOG_FILE, "utf-8")); } 
+  catch (e) { res.send("Логи порожні"); }
+});
+
+// --- СТАТИКА ---
 app.use("/assets", express.static(path.join(__dirname, "assets")));
 app.use(express.static(path.join(__dirname, "public")));
 app.get("*", (req, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
@@ -325,18 +228,11 @@ app.get("*", (req, res) => res.sendFile(path.join(__dirname, "public", "index.ht
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {
   console.log("LIVE SERVER READY on port", PORT);
-  
-  // ВАЖЛИВО: Сповіщення в ТГ про запуск сервера
   await writeLog(`🚀 СЕРВЕР ПЕРЕЗАПУЩЕНО\nСтатус: Активний`, "SUCCESS");
-
-  const pingHostRaw = process.env.RENDER_EXTERNAL_HOSTNAME || process.env.PING_HOST || "";
-  if (pingHostRaw) {
-    const pingUrl = pingHostRaw.startsWith("http://") || pingHostRaw.startsWith("https://") ? pingHostRaw : `https://${pingHostRaw}`;
-    setInterval(() => {
-      try {
-        if (pingUrl.startsWith("https://")) https.get(pingUrl, () => {}).on('error', () => {});
-        else http.get(pingUrl, () => {}).on('error', () => {});
-      } catch (e) {}
-    }, 12 * 60 * 1000);
-  }
+  
+  // Антисон
+  setInterval(() => {
+    const host = process.env.RENDER_EXTERNAL_HOSTNAME;
+    if(host) https.get(`https://${host}/`, () => {}).on('error', ()=>{});
+  }, 12 * 60 * 1000);
 });
