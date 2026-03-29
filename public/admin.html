@@ -5,7 +5,6 @@
   <title>Адмінка — LIVE</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
-    /* ОРИГІНАЛЬНИЙ СТИЛЬ ADMIN (3) */
     body{font-family:system-ui,Arial;margin:0;background:#f3f4f6;padding:20px}
     .wrap{max-width:900px;margin:0 auto}
     .card{background:#fff;padding:16px;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,0.06);margin-bottom:16px}
@@ -15,19 +14,15 @@
     .btn.secondary{background:#e9ecef;color:#111}
     .btn-del{background:#ff4d4d;color:white;padding:6px 12px;border-radius:6px;border:none;cursor:pointer;font-weight:bold;margin-top:10px;font-size:13px;}
     label{font-weight:600}
-    
-    /* ТЕМНИЙ ТЕРМІНАЛ ДЛЯ ЛОГІВ */
     pre{white-space:pre-wrap;word-break:break-word;background:#0b1220;color:#0f0;padding:12px;border-radius:8px;overflow:auto;height:250px;font-family:monospace;}
     .topbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px; flex-wrap: wrap;}
     .small{font-size:13px;color:#666}
     .placeholder{background:#f7f7f7;border:1px dashed #ddd;padding:12px;border-radius:8px;color:#666;text-align:center;}
     
-    /* ЕФЕКТИ ПЕДРО ТА МОЛОТКА */
     #crackCanvas { position:fixed; inset:0; z-index:9999; display:none; pointer-events:none; }
     #hammer { position:fixed; top:50%; left:50%; font-size:80px; z-index:10000; display:none; transform: translate(-50%, -200%); }
     .hammer-hit { display:block!important; animation: hit 0.4s forwards; }
     @keyframes hit { 0%{transform:translate(-50%,-200%) rotate(-45deg);} 100%{transform:translate(-50%,-50%) rotate(0deg);} }
-    
     .back-link { color: #666; font-size: 14px; text-decoration: none; margin-top: 15px; display: inline-block; transition: 0.2s; }
     .back-link:hover { color: #111; text-decoration: underline; }
   </style>
@@ -40,9 +35,7 @@
     <div id="loginCard" class="card" style="max-width: 400px; margin: 80px auto; text-align: center;">
       <h2>Вхід в адмінку</h2>
       <input id="pass" type="password" placeholder="Пароль адміністратора" />
-      <div style="margin-top:15px">
-        <button class="btn" style="width:100%; box-sizing:border-box;" onclick="doLogin()">Увійти</button>
-      </div>
+      <div style="margin-top:15px"><button class="btn" style="width:100%;" onclick="doLogin()">Увійти</button></div>
       <a href="/" class="back-link">← Повернутися на сайт</a>
     </div>
 
@@ -50,7 +43,7 @@
       <div class="topbar">
         <div style="display:flex;gap:10px;align-items:center">
           <strong>Адмінка — LIVE</strong>
-          <span class="small">— керування новинами</span>
+          <span class="small">— керування</span>
         </div>
         <div style="display:flex;gap:8px;align-items:center">
           <a href="/" class="btn secondary">На сайт</a>
@@ -59,34 +52,39 @@
       </div>
 
       <div class="card">
-        <h3>Додати новину</h3>
-        <label>Заголовок</label>
-        <input id="n_title" placeholder="Напишіть заголовок..." />
+        <h3>📝 Додати новину</h3>
+        <label>Заголовок</label><input id="n_title" placeholder="Напишіть заголовок..." />
         <label>Категорія</label>
-        <select id="n_category">
-            <option value="Дрезден">Дрезден</option>
-            <option value="Україна">Україна</option>
-            <option value="Еміграція">Еміграція</option>
+        <select id="n_category"><option value="Дрезден">Дрезден</option><option value="Україна">Україна</option><option value="Еміграція">Еміграція</option></select>
+        <label>Контент</label><textarea id="n_content" rows="4" placeholder="Текст новини..."></textarea>
+        <label>Зображення</label><input id="n_image" type="file" accept="image/*" />
+        <div style="margin-top:10px"><button class="btn" onclick="addNews()">Опублікувати</button></div>
+      </div>
+
+      <div class="card" style="border-left: 4px solid #0057b7;">
+        <h3>📘 Редактор "Довідника емігранта"</h3>
+        <label>Оберіть розділ для редагування:</label>
+        <select id="g_section" onchange="loadGuideSection()">
+            <option value="p24">🛡️ Параграф 24: Деталі</option>
+            <option value="house">🏠 Пошук житла (Wohnung)</option>
+            <option value="job">💼 Робота та Jobcenter</option>
+            <option value="med">🏥 Страхування</option>
         </select>
-        <label>Контент</label>
-        <textarea id="n_content" rows="4" placeholder="Текст новини..."></textarea>
-        <label>Зображення (необов'язково)</label>
-        <input id="n_image" type="file" accept="image/*" />
-        <div style="margin-top:10px">
-          <button class="btn" onclick="addNews()">Опублікувати</button>
-        </div>
+        <label>Заголовок розділу</label>
+        <input id="g_title" />
+        <label>Текст розділу</label>
+        <textarea id="g_text" rows="6"></textarea>
+        <div style="margin-top:10px"><button class="btn" style="background:#0057b7;" onclick="saveGuide()">💾 Зберегти зміни в довіднику</button></div>
       </div>
 
       <div class="card">
-        <h3>Логи сервера</h3>
-        <div style="margin-bottom:8px" class="row">
-          <button class="btn" onclick="fetchLogs()">Оновити логи</button>
-        </div>
+        <h3>🛡️ Логи сервера</h3>
+        <div style="margin-bottom:8px"><button class="btn secondary" onclick="fetchLogs()">🔄 Оновити логи</button></div>
         <pre id="logsPre">Завантаження...</pre>
       </div>
 
       <div class="card">
-        <h3>Архів новин</h3>
+        <h3>📚 Архів новин</h3>
         <div id="newsList" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:15px;"></div>
       </div>
     </div>
@@ -94,14 +92,13 @@
 
   <script>
     const ADMIN_PASS_KEY = 'admin_pass_temp';
+    let fullGuideData = {};
 
-    // ЗВУК ТА ТРІЩИНИ ДЛЯ БАНУ
     function playHitSound() {
         try {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
             const osc = ctx.createOscillator(); const g = ctx.createGain();
             osc.type='sawtooth'; osc.frequency.setValueAtTime(100, ctx.currentTime);
-            // Приглушив звук удару (було 0.5, стало 0.2), щоб музика Педро звучала голосніше
             g.gain.setValueAtTime(0.2, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime+0.4);
             osc.connect(g); g.connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime+0.4);
         } catch(e) {}
@@ -127,12 +124,11 @@
             method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ pass })
           });
           const data = await res.json();
-          
           if(res.ok){
             sessionStorage.setItem(ADMIN_PASS_KEY, pass);
             document.getElementById('loginCard').style.display='none';
             document.getElementById('adminUI').style.display='block';
-            loadNews(); fetchLogs();
+            loadNews(); fetchLogs(); fetchGuide();
           } else if(res.status===403 || data.showPedro){
             document.getElementById('hammer').classList.add('hammer-hit');
             setTimeout(() => {
@@ -143,45 +139,66 @@
                     <audio id="pedroAudio" src="https://www.myinstants.com/media/sounds/pedro-pedro-pedro-pedro-pe.mp3" autoplay loop></audio>
                     <br><a href="/" class="back-link">← Повернутися на сайт</a>
                 `;
-                // Примусово викручуємо гучність музики на 100%
                 const pAudio = document.getElementById('pedroAudio');
                 if (pAudio) pAudio.volume = 1.0;
             }, 400);
-          } else {
-            alert(data.error || 'Невірний пароль');
-          }
+          } else { alert(data.error || 'Невірний пароль'); }
       } catch(e) { alert('Помилка з’єднання'); }
     }
 
-    function logout(){
-      sessionStorage.removeItem(ADMIN_PASS_KEY);
-      location.reload();
-    }
+    function logout(){ sessionStorage.removeItem(ADMIN_PASS_KEY); location.reload(); }
 
     async function addNews(){
       const pass = sessionStorage.getItem(ADMIN_PASS_KEY);
       const title = document.getElementById('n_title').value;
       if(!title) return alert("Заповніть заголовок!");
-
       const fd = new FormData();
-      fd.append("pass", pass);
-      fd.append("title", title);
+      fd.append("pass", pass); fd.append("title", title);
       fd.append("category", document.getElementById("n_category").value);
       fd.append("content", document.getElementById("n_content").value);
-      
       const fileInput = document.getElementById('n_image');
       if(fileInput.files[0]) fd.append("image", fileInput.files[0]);
-
       try {
           const res = await fetch('/api/news/add', { method: 'POST', body: fd });
           if(res.ok) {
-              alert("✅ Новина додана!");
-              document.getElementById('n_title').value = '';
-              document.getElementById('n_content').value = '';
-              fileInput.value = '';
+              alert("✅ Опубліковано!");
+              document.getElementById('n_title').value = ''; document.getElementById('n_content').value = ''; fileInput.value = '';
               loadNews(); fetchLogs();
-          } else alert("Помилка додавання");
+          } else alert("Помилка");
       } catch(e) { alert("Помилка"); }
+    }
+
+    // НОВЕ: Робота з довідником
+    async function fetchGuide() {
+        try {
+            const res = await fetch('/api/guide');
+            fullGuideData = await res.json();
+            loadGuideSection(); // Завантажити перший вибраний пункт
+        } catch(e) {}
+    }
+
+    function loadGuideSection() {
+        const key = document.getElementById('g_section').value;
+        if(fullGuideData[key]) {
+            document.getElementById('g_title').value = fullGuideData[key].title;
+            document.getElementById('g_text').value = fullGuideData[key].text;
+        }
+    }
+
+    async function saveGuide() {
+        const key = document.getElementById('g_section').value;
+        fullGuideData[key].title = document.getElementById('g_title').value;
+        fullGuideData[key].text = document.getElementById('g_text').value;
+        const pass = sessionStorage.getItem(ADMIN_PASS_KEY);
+
+        try {
+            const res = await fetch('/api/guide/update', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ pass, guideData: fullGuideData })
+            });
+            if(res.ok) { alert('✅ Зміни в довіднику збережено!'); fetchLogs(); }
+            else alert('Помилка збереження');
+        } catch(e) { alert('Помилка з’єднання'); }
     }
 
     async function fetchLogs(){
@@ -191,8 +208,7 @@
           if(res.ok){
               const text = await res.text();
               const el = document.getElementById('logsPre');
-              el.textContent = text || "Логи порожні";
-              el.scrollTop = el.scrollHeight;
+              el.textContent = text || "Логи порожні"; el.scrollTop = el.scrollHeight;
           }
       } catch(e) {}
     }
@@ -200,10 +216,8 @@
     async function loadNews(){
       const res = await fetch('/api/news');
       const arr = await res.json();
-      const container = document.getElementById('newsList');
-      container.innerHTML = '';
+      const container = document.getElementById('newsList'); container.innerHTML = '';
       if(!arr.length){ container.innerHTML = '<div class="placeholder">Новин немає</div>'; return; }
-      
       arr.forEach(n => {
         const el = document.createElement('div');
         el.style.border = '1px solid #eee'; el.style.padding = '10px'; el.style.borderRadius = '8px';
@@ -229,11 +243,10 @@
       } catch(e) {}
     }
 
-    // Автоматичний вхід
     if(sessionStorage.getItem(ADMIN_PASS_KEY)){
         document.getElementById('loginCard').style.display='none';
         document.getElementById('adminUI').style.display='block';
-        loadNews(); fetchLogs();
+        loadNews(); fetchLogs(); fetchGuide();
     }
   </script>
 </body>
