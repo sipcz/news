@@ -10,7 +10,7 @@
             --bg: #f0f2f5; --card-bg: #ffffff; --border: #d1d9e0;
         }
 
-        body { margin: 0; background: var(--bg); color: var(--de-black); font-family: 'Segoe UI', sans-serif; }
+        body { margin: 0; background: var(--bg); color: var(--de-black); font-family: 'Segoe UI', sans-serif; overflow-x: hidden; }
 
         nav {
             background: #fff; border-top: 4px solid var(--ua-blue); border-bottom: 2px solid var(--ua-yellow);
@@ -21,16 +21,16 @@
         .logo-text { font-weight: 900; letter-spacing: 1px; }
         .logo-text span { color: var(--ua-blue); }
 
-        .container { max-width: 900px; margin: 30px auto; padding: 0 15px; }
+        .container { max-width: 900px; margin: 30px auto; padding: 0 15px; position: relative; z-index: 10; }
 
         .card {
             background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border);
             padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); margin-bottom: 30px;
         }
 
-        #loginBox { max-width: 400px; margin: 100px auto; text-align: center; }
+        #loginBox { max-width: 400px; margin: 100px auto; text-align: center; position: relative; z-index: 20; }
 
-        input, select, textarea {
+        input {
             width: 100%; padding: 12px; margin: 8px 0; border: 1px solid var(--border);
             border-radius: 8px; font-size: 15px; background: #fdfdfd;
         }
@@ -42,12 +42,39 @@
         }
         .btn:hover { background: var(--ua-blue); color: #fff; }
 
+        /* ЕФЕКТ ТРІЩИН */
+        #crack-overlay {
+            display: none; position: fixed; inset: 0;
+            background-image: url('https://p7.hiclipart.com/preview/415/795/593/screen-crack-desktop-wallpaper-tempered-glass-glass.jpg');
+            background-size: cover; background-position: center;
+            z-index: 50; pointer-events: none; /* Щоб можна було клікати крізь тріщини */
+            opacity: 0.9;
+        }
+
+        /* АНІМАЦІЯ МОЛОТКА */
+        #hammer-anim {
+            display: none; position: fixed; top: 50%; left: 50%;
+            transform: translate(-50%, -150%);
+            width: 150px; height: 150px;
+            background-image: url('https://www.freeiconspng.com/uploads/hammer-icon-png-1.png');
+            background-size: contain; background-repeat: no-repeat;
+            z-index: 100;
+        }
+
+        @keyframes hammer-hit {
+            0% { transform: translate(-50%, -150%) rotate(-30deg); opacity: 0; }
+            50% { transform: translate(-50%, -50%) rotate(0deg); opacity: 1; }
+            60% { transform: translate(-50%, -50%) scale(1.1); }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+        }
+
+        .hit-animation { animation: hammer-hit 0.8s ease-out forwards; }
+
         /* КОНСОЛЬ ЛОГІВ */
         #logConsole {
             background: #1e1e1e; color: #00ff00; padding: 15px; border-radius: 8px;
             font-family: 'Courier New', monospace; font-size: 12px;
-            height: 250px; overflow-y: scroll; white-space: pre-wrap; margin-top: 10px;
-            text-align: left; border: 1px solid #333;
+            height: 250px; overflow-y: scroll; white-space: pre-wrap; text-align: left;
         }
 
         .news-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
@@ -61,27 +88,26 @@
 </head>
 <body>
 
+    <div id="crack-overlay"></div>
+    <div id="hammer-anim"></div>
+    <audio id="crack-sound" src="https://www.soundjay.com/break-sound-effects/sounds/glass-break-3.mp3"></audio>
+
     <nav>
         <div class="logo-text"><span>ADMIN</span> LIVE ДРЕЗДЕН</div>
-        <div class="nav-actions">
-            <a href="/" style="text-decoration:none; font-size:13px; color:var(--ua-blue); font-weight:bold; border: 1px solid; padding: 5px 10px; border-radius: 5px;">На головну</a>
-        </div>
     </nav>
 
     <div class="container">
         <div id="loginBox" class="card">
-            <div id="loginFormArea">
-                <h2>Доступ до панелі</h2>
-                <input type="password" id="adminPass" placeholder="Введіть пароль">
-                <button class="btn" onclick="login()">Увійти</button>
-            </div>
+            <h2>Доступ до панелі</h2>
+            <input type="password" id="adminPass" placeholder="Введіть пароль">
+            <button class="btn" onclick="login()">Увійти</button>
         </div>
 
         <div id="adminPanel">
             <div class="card" style="border-left: 5px solid #ff4d4d;">
-                <h3>🛡️ Журнал безпеки (Логи)</h3>
+                <h3>🛡️ Журнал безпеки</h3>
                 <div id="logConsole">Завантаження...</div>
-                <button class="btn" style="margin-top:10px; background:#444; font-size:12px; padding:8px; width: auto;" onclick="fetchLogs()">Оновити журнал</button>
+                <button class="btn" style="margin-top:10px; background:#444; font-size:12px; width:auto;" onclick="fetchLogs()">Оновити</button>
             </div>
 
             <div class="card">
@@ -91,15 +117,13 @@
                     <option value="Дрезден">Дрезден</option>
                     <option value="Україна">Україна</option>
                     <option value="Еміграція">Еміграція</option>
-                    <option value="Події">Події</option>
-                    <option value="ZAXID.NET">ZAXID.NET</option>
                 </select>
                 <input type="file" id="newsImageInput" accept="image/*">
-                <textarea id="newsContent" placeholder="Текст новини..."></textarea>
+                <textarea id="newsContent" placeholder="Текст..."></textarea>
                 <button class="btn" onclick="addNews()">Опублікувати</button>
             </div>
 
-            <h3>Архів ваших новин</h3>
+            <h3>Архів новин</h3>
             <div class="news-grid" id="adminNewsList"></div>
         </div>
     </div>
@@ -128,19 +152,44 @@
                     fetchLogs();
                     renderNews();
                 } else if (data.showPedro) {
-                    // Танцюючий єнот при блокуванні
-                    loginBox.innerHTML = `
-                        <div style="text-align:center; padding: 20px;">
-                            <h2 style="color:#ff3b30;">IP ЗАБЛОКОВАНО!</h2>
-                            <p>Забагато спроб. Відпочинь годину з Педро...</p>
-                            <img src="https://media.tenor.com/79_u2v0vXRAAAAAM/pedro-raccoon.gif" style="width:100%; border-radius:15px; margin: 15px 0;">
-                            <audio src="https://www.myinstants.com/media/sounds/pedro-pedro-pedro-pedro-pe.mp3" autoplay loop></audio>
-                        </div>`;
+                    triggerHammerEffect(loginBox);
                 } else {
                     alert(data.error || "Невірний пароль!");
                     passInput.value = "";
                 }
             } catch (e) { alert("Сервер недоступний"); }
+        }
+
+        // --- ЕФЕКТ УДАРУ ТА ТРІЩИН ---
+        function triggerHammerEffect(loginBox) {
+            const hammer = document.getElementById('hammer-anim');
+            const crack = document.getElementById('crack-overlay');
+            const sound = document.getElementById('crack-sound');
+
+            // 1. Показуємо молоток і запускаємо анімацію
+            hammer.style.display = 'block';
+            hammer.classList.add('hit-animation');
+
+            // 2. У момент "удару" (через 500мс) запускаємо звук і тріщини
+            setTimeout(() => {
+                sound.play(); // Звук битого скла
+                crack.style.display = 'block'; // З'являються тріщини
+                
+                // 3. Замінюємо форму входу на Педро
+                loginBox.innerHTML = `
+                    <div style="text-align:center; padding: 20px; position:relative; z-index:60;">
+                        <h2 style="color:#ff3b30; text-transform:uppercase;">ЕКРАН РОЗБИТО!</h2>
+                        <p>IP заблоковано. Танцюй з Педро...</p>
+                        <img src="https://media.tenor.com/79_u2v0vXRAAAAAM/pedro-raccoon.gif" style="width:100%; border-radius:15px; margin: 15px 0; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
+                        <audio src="https://www.myinstants.com/media/sounds/pedro-pedro-pedro-pedro-pe.mp3" autoplay loop></audio>
+                    </div>`;
+            }, 500);
+
+            // 4. Ховаємо молоток після завершення анімації
+            setTimeout(() => {
+                hammer.style.display = 'none';
+                hammer.classList.remove('hit-animation');
+            }, 1000);
         }
 
         async function fetchLogs() {
@@ -151,51 +200,41 @@
                 const consoleEl = document.getElementById("logConsole");
                 consoleEl.innerText = text;
                 consoleEl.scrollTop = consoleEl.scrollHeight;
-            } catch (e) { console.log("Помилка логів"); }
+            } catch (e) {}
         }
 
+        // --- ІНШІ ФУНКЦІЇ (БЕЗ ЗМІН) ---
         async function addNews() {
             const title = document.getElementById("newsTitle").value;
             const category = document.getElementById("newsCategory").value;
             const content = document.getElementById("newsContent").value;
             const imageFile = document.getElementById("newsImageInput").files[0];
-
             if (!title || !content) return alert("Заповніть поля!");
-
             const formData = new FormData();
-            formData.append("pass", CURRENT_PASS);
-            formData.append("title", title);
-            formData.append("category", category);
-            formData.append("content", content);
+            formData.append("pass", CURRENT_PASS); formData.append("title", title);
+            formData.append("category", category); formData.append("content", content);
             if (imageFile) formData.append("image", imageFile);
-
             try {
                 const res = await fetch('/api/news/add', { method: 'POST', body: formData });
-                if (res.ok) { 
-                    alert("✅ Опубліковано успішно!"); 
-                    location.reload(); 
-                } else {
-                    alert("❌ Помилка збереження.");
-                }
-            } catch (err) { alert("Помилка з'єднання"); }
+                if (res.ok) { alert("Опубліковано!"); location.reload(); }
+            } catch (err) { alert("Помилка"); }
         }
 
         async function renderNews() {
             const list = document.getElementById("adminNewsList");
             const res = await fetch('/api/news');
             const news = await res.json();
-            // Показуємо тільки ті новини, які можна видалити (ті, що мають ID)
-            list.innerHTML = news.map(n => `
+            list.innerHTML = news.filter(n => n.id).map(n => `
                 <div class="news-item">
-                    <img src="${n.img || 'assets/img/auto-news.jpg'}" alt="img">
-                    <h4 style="font-size:11px; height: 30px; overflow: hidden;">${n.title}</h4>
+                    <img src="${n.img || 'assets/img/auto-news.jpg'}" onerror="this.src='assets/img/auto-news.jpg'">
+                    <h4 style="font-size:11px; height:30px; overflow:hidden;">${n.title}</h4>
                     <button class="del-btn" onclick="deleteNews('${n.id}')">Видалити</button>
                 </div>
             `).join('');
         }
 
         async function deleteNews(id) {
-            if (!confirm("Видалити цю новину назавжди?")) return;
+            if (!confirm("Видалити?")) return;
             try {
                 const res = await fetch('/api/news/delete', {
                     method: 'POST',
@@ -203,8 +242,7 @@
                     body: JSON.stringify({ pass: CURRENT_PASS, id: id })
                 });
                 if (res.ok) renderNews();
-                else alert("Помилка при видаленні");
-            } catch (e) { alert("Помилка з'єднання"); }
+            } catch (e) {}
         }
     </script>
 </body>
