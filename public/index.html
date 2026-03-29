@@ -16,7 +16,14 @@
             --border: #334155; --de-black: #f8fafc;
         }
 
-        * { box-sizing: border-box; transition: background 0.3s, color 0.3s; }
+        /* 🟢 ОПТИМІЗАЦІЯ 1: Прибрали transition для ВСІХ елементів (*) */
+        * { box-sizing: border-box; }
+        
+        /* Анімацію кольорів залишили тільки там, де вона реально потрібна */
+        body, nav, .news-card, .sidebar-section, .modal-content, input, textarea {
+            transition: background 0.3s, color 0.3s, border-color 0.3s;
+        }
+
         body {
             margin: 0; background: var(--soft-bg); color: var(--text-dark);
             font-family: 'Segoe UI', Roboto, sans-serif; line-height: 1.5;
@@ -215,25 +222,37 @@
         try {
             const res = await fetch('/api/news');
             allNews = await res.json();
-            renderNews(allNews);
+            
+            // 🟢 ОПТИМІЗАЦІЯ 3: Виводимо тільки 30 новин, щоб не зависав комп'ютер
+            renderNews(allNews.slice(0, 30));
             
             const urgent = document.getElementById('urgentFeed');
-            urgent.innerHTML = allNews.slice(0, 5).map((n, i) => `
-                <div class="link-item" onclick="openNewsByIndex(${i})">
+            urgent.innerHTML = allNews.slice(0, 5).map((n) => {
+                const origIndex = allNews.indexOf(n);
+                return `
+                <div class="link-item" onclick="openNewsByIndex(${origIndex})">
                     <div style="font-size:0.85rem; font-weight:500;">${n.title}</div>
                 </div>
-            `).join('');
-        } catch (e) { console.log("Помилка завантаження"); }
+            `}).join('');
+        } catch (e) { document.getElementById('newsGrid').innerHTML = "Помилка завантаження новин."; }
     }
 
-    function renderNews(news) {
+    function renderNews(newsToRender) {
         const grid = document.getElementById('newsGrid');
-        grid.innerHTML = news.map((n, i) => {
+        if (!newsToRender || newsToRender.length === 0) {
+            grid.innerHTML = "<p style='grid-column: 1/-1;'>Новин у цій категорії поки немає.</p>";
+            return;
+        }
+
+        grid.innerHTML = newsToRender.map((n) => {
+            // Виправляємо баг з відкриттям неправильної новини після фільтрації
+            const origIndex = allNews.indexOf(n);
             const hasPhoto = n.img && n.img !== "assets/img/auto-news.jpg";
+            
             return `
-                <div class="news-card" onclick="openNewsByIndex(${i})">
+                <div class="news-card" onclick="openNewsByIndex(${origIndex})">
                     <div class="img-ratio">
-                        ${hasPhoto ? `<img src="${n.img}" onload="this.classList.add('loaded')" onerror="this.style.display='none'">` : ''}
+                        ${hasPhoto ? `<img src="${n.img}" loading="lazy" onload="this.classList.add('loaded')" onerror="this.style.display='none'">` : ''}
                     </div>
                     <div class="news-content">
                         <span class="news-tag">${n.category || 'Дрезден'}</span>
@@ -258,9 +277,10 @@
     }
 
     async function filterByCategory(cat) {
-        const filtered = allNews.filter(n => n.category === cat);
+        // Також обмежуємо до 30 новин у категорії
+        const filtered = allNews.filter(n => n.category === cat).slice(0, 30);
         const titleEl = document.getElementById('feedTitle');
-        titleEl.innerText = `Рубрика: ${cat}`;
+        titleEl.innerHTML = `Рубрика: ${cat} <button onclick="window.location.reload()" style="margin-left:10px; padding:3px 8px; font-size:12px; cursor:pointer;">Скинути</button>`;
         titleEl.style.display = 'block';
         renderNews(filtered);
         window.scrollTo({ top: 0, behavior: 'smooth' });
