@@ -103,7 +103,6 @@ const writeLog = async (msg, type = "INFO") => {
 
 // --- ЕКСТРАКТОР ЗОБРАЖЕНЬ ---
 function extractImage(item) {
-  // 1. enclosure може бути рядком, об'єктом або масивом
   if (item.enclosure) {
     if (typeof item.enclosure === 'string') return item.enclosure;
     if (Array.isArray(item.enclosure) && item.enclosure.length) {
@@ -118,7 +117,6 @@ function extractImage(item) {
     }
   }
 
-  // 2. media:content або mediaContent
   const mc = item.mediaContent || item['media:content'];
   if (mc) {
     const candidate = Array.isArray(mc) ? mc[0] : mc;
@@ -129,7 +127,6 @@ function extractImage(item) {
     }
   }
 
-  // 3. image поле
   if (item.image) {
     if (typeof item.image === 'string') return item.image;
     if (item.image.url) return item.image.url;
@@ -137,21 +134,18 @@ function extractImage(item) {
     if (item.image['@url']) return item.image['@url'];
   }
 
-  // 4. Шукаємо <img> в контенті (підтримка одинарних/двійних лапок)
   const body = (item.content || "") + (item.contentEncoded || "") + (item.contentSnippet || "");
   const m = body.match(/<img[^>]+src=(?:'|")([^'">]+)(?:'|")/i);
   if (m && m[1]) return m[1];
 
-  // 5. fallback
   return "assets/img/auto-news.jpg";
 }
 
-// --- ГРАБЕР (ПОКРАЩЕНИЙ ПОШУК ФОТО) ---
+// --- ГРАБЕР (З "ZAXID.NET" ВИДАЛЕНО) ---
 async function autoFetchNews() {
   try {
     let news = safeReadJson(NEWS_FILE, []);
     const sources = [
-      { n: "ZAXID.NET", u: "https://zaxid.net/rss/all.xml" },
       { n: "ТСН Україна", u: "https://tsn.ua/rss/full.rss" },
       { n: "MDR Саксонія", u: "https://www.mdr.de/nachrichten/sachsen/index-rss.xml" },
       { n: "TAG24 Дрезден", u: "https://www.tag24.de/dresden/rss" },
@@ -198,7 +192,6 @@ async function autoFetchNews() {
     }
 
     const now = Date.now();
-    // Фільтр 48 годин + сортування + обмеження
     news = news.filter(n => (now - n.id) < 172800000);
     news.sort((a, b) => b.id - a.id);
     news = news.slice(0, 150);
@@ -237,7 +230,6 @@ app.post('/api/admin/login', async (req, res) => {
   const now = Date.now();
   const sec = getSecData();
 
-  // Очищення закінчених банів
   if (sec.blocked && sec.blocked[ip] && now >= sec.blocked[ip]) {
     delete sec.blocked[ip];
     delete sec.attempts[ip];
@@ -261,7 +253,7 @@ app.post('/api/admin/login', async (req, res) => {
   } else {
     sec.attempts[ip] = (sec.attempts[ip] || 0) + 1;
     if (sec.attempts[ip] >= 3) {
-      sec.blocked[ip] = now + 3600000; // 1 година
+      sec.blocked[ip] = now + 3600000;
       await writeLog(`🚨 БАН IP ${ip} (3 спроби)`, "ALERT");
       delete sec.attempts[ip];
     }
@@ -281,7 +273,6 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log("LIVE SERVER READY on port", PORT);
 
-  // Пінг зовнішнього хоста тільки якщо задано
   const pingHostRaw = process.env.RENDER_EXTERNAL_HOSTNAME || process.env.PING_HOST || "";
   if (pingHostRaw) {
     const pingUrl = pingHostRaw.startsWith("http://") || pingHostRaw.startsWith("https://")
