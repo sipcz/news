@@ -1,200 +1,173 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-  <meta charset="utf-8" />
-  <title>Адмінка — LIVE</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <style>
-    body{font-family:system-ui,Arial;margin:0;background:#f3f4f6;padding:20px}
-    .wrap{max-width:900px;margin:0 auto}
-    .card{background:#fff;padding:16px;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,0.06);margin-bottom:16px}
-    input,textarea,select{width:100%;padding:10px;margin-top:8px;border:1px solid #e6e9ee;border-radius:8px;box-sizing:border-box}
-    .row{display:flex;gap:10px;align-items:center}
-    .btn{background:#111;color:#ffd700;padding:10px 14px;border-radius:8px;border:none;cursor:pointer;font-weight:700}
-    .btn.secondary{background:#e9ecef;color:#111}
-    label{font-weight:600}
-    pre{white-space:pre-wrap;word-break:break-word;background:#0b1220;color:#fff;padding:12px;border-radius:8px;overflow:auto}
-    .topbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
-    .small{font-size:13px;color:#666}
-    .placeholder{background:#f7f7f7;border:1px dashed #ddd;padding:12px;border-radius:8px;color:#666}
-  </style>
+    <meta charset="UTF-8">
+    <title>Панель керування — LIVE</title>
+    <style>
+        body { margin:0; font-family: sans-serif; background:#f0f2f5; overflow-x:hidden; }
+        nav { background:#fff; padding:15px; font-weight:bold; border-bottom:3px solid #ffd700; border-top: 4px solid #0057b7; text-align:center;}
+        .card { background:#fff; margin:20px auto; padding:20px; max-width:600px; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.1); }
+        input, textarea, select { width:100%; padding:10px; margin:10px 0; border:1px solid #ddd; border-radius:8px; box-sizing:border-box; }
+        .btn { background:#1a1a1a; color:#ffd700; border:none; padding:12px; width:100%; border-radius:8px; cursor:pointer; font-weight:bold; margin-top: 10px; }
+        .btn-del { background:#ff4d4d; color:white; border:none; padding:6px; border-radius:6px; cursor:pointer; width:100%; margin-top:5px; }
+        #logConsole { background:#1e1e1e; color:#0f0; padding:15px; border-radius:8px; height:200px; overflow-y:auto; font-family:monospace; font-size:12px; white-space:pre-wrap;}
+        .news-item { border:1px solid #ddd; padding:10px; margin-bottom:10px; border-radius:8px; text-align:center; }
+        .news-item img { width:100%; height:120px; object-fit:cover; border-radius:6px; }
+        
+        /* ЕФЕКТИ */
+        #crackCanvas { position:fixed; inset:0; z-index:9999; display:none; pointer-events:none; }
+        #hammer { position:fixed; top:50%; left:50%; font-size:80px; z-index:10000; display:none; transform: translate(-50%, -200%); }
+        .hammer-hit { display:block!important; animation: hit 0.4s forwards; }
+        @keyframes hit { 0%{transform:translate(-50%,-200%) rotate(-45deg);} 100%{transform:translate(-50%,-50%) rotate(0deg);} }
+    </style>
 </head>
 <body>
-  <div class="wrap">
-    <div id="loginCard" class="card">
-      <h2>Вхід в адмінку</h2>
-      <input id="pass" type="password" placeholder="Пароль адміністратора" />
-      <div style="margin-top:10px" class="row">
-        <button class="btn" onclick="doLogin()">Увійти</button>
-        <button class="btn secondary" onclick="location.href='/'">На головну</button>
-      </div>
-      <p class="small" style="margin-top:8px">Пароль не зберігається на сервері в цій формі — використовується для авторизації запитів.</p>
+    <canvas id="crackCanvas"></canvas>
+    <div id="hammer">🔨</div>
+
+    <nav>ADMIN PANEL - LIVE ДРЕЗДЕН</nav>
+
+    <div id="loginBox" class="card" style="text-align: center;">
+        <h2>Вхід в систему</h2>
+        <input type="password" id="adminPass" placeholder="Пароль">
+        <button class="btn" onclick="login()">Увійти</button>
     </div>
 
-    <div id="adminUI" style="display:none">
-      <div class="topbar">
-        <div style="display:flex;gap:10px;align-items:center">
-          <strong>Адмінка — LIVE</strong>
-          <span class="small">— керування новинами та логами</span>
+    <div id="adminPanel" style="display:none;">
+        <div class="card" style="border-left: 5px solid #ff4d4d;">
+            <h3>🛡️ Журнал подій</h3>
+            <div id="logConsole">Завантаження...</div>
+            <button class="btn" style="background:#555; color:#fff;" onclick="fetchLogs()">Оновити логи</button>
         </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <button class="btn secondary" onclick="location.href='/'">На головну</button>
-          <button class="btn secondary" onclick="logout()">Вийти</button>
-        </div>
-      </div>
 
-      <div class="card">
-        <h3>Додати новину</h3>
-        <label>Заголовок</label>
-        <input id="n_title" />
-        <label>Категорія</label>
-        <input id="n_category" placeholder="Наприклад: Адмін, Локальні, DW" />
-        <label>Контент (короткий)</label>
-        <textarea id="n_content" rows="4"></textarea>
-        <label>Посилання (опціонально)</label>
-        <input id="n_link" />
-        <label>Зображення (опціонально) — завантажте файл</label>
-        <input id="n_image" type="file" accept="image/*" />
-        <div style="margin-top:10px" class="row">
-          <button class="btn" onclick="uploadAndAdd()">Завантажити і додати</button>
-          <button class="btn secondary" onclick="addWithoutUpload()">Додати без зображення</button>
+        <div class="card">
+            <h3>Створити публікацію</h3>
+            <input type="text" id="newsTitle" placeholder="Заголовок">
+            <select id="newsCategory">
+                <option value="Дрезден">Дрезден</option>
+                <option value="Україна">Україна</option>
+            </select>
+            <input type="file" id="newsImageInput" accept="image/*">
+            <textarea id="newsContent" placeholder="Текст..."></textarea>
+            <button class="btn" onclick="addNews()">Опублікувати</button>
         </div>
-        <div id="addResult" style="margin-top:10px;color:green"></div>
-      </div>
 
-      <div class="card">
-        <h3>Логи сервера (останні рядки)</h3>
-        <div style="margin-bottom:8px" class="row">
-          <button class="btn" onclick="fetchLogs()">Оновити логи</button>
-          <button class="btn secondary" onclick="downloadNews()">Завантажити news-data.json</button>
+        <div class="card">
+            <h3>Архів новин</h3>
+            <div id="adminNewsList" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;"></div>
         </div>
-        <pre id="logsPre">Натисніть "Оновити логи"</pre>
-      </div>
-
-      <div class="card">
-        <h3>Поточні новини (preview)</h3>
-        <div id="newsList"></div>
-      </div>
     </div>
-  </div>
 
-  <script>
-    const ADMIN_PASS_KEY = 'admin_pass_temp'; // тимчасово зберігаємо в сесії для запитів (не безпечно для публічних ПК)
+    <script>
+        let CURRENT_PASS = "";
 
-    function doLogin(){
-      const pass = document.getElementById('pass').value || '';
-      fetch('/api/admin/login', {
-        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ pass })
-      }).then(r=>r.json().then(j=>({status:r.status, body:j}))).then(res=>{
-        if(res.status===200){
-          sessionStorage.setItem(ADMIN_PASS_KEY, pass);
-          document.getElementById('loginCard').style.display='none';
-          document.getElementById('adminUI').style.display='block';
-          loadNews(); fetchLogs();
-        } else if(res.status===403){
-          alert('Ваш IP заблоковано');
-        } else {
-          alert(res.body && res.body.error ? res.body.error : 'Невдала спроба входу');
+        // Звук удару
+        function playHitSound() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator(); const g = ctx.createGain();
+                osc.type='sawtooth'; osc.frequency.setValueAtTime(100, ctx.currentTime);
+                g.gain.setValueAtTime(0.5, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime+0.4);
+                osc.connect(g); g.connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime+0.4);
+            } catch(e) {}
         }
-      }).catch(()=>alert('Помилка з’єднання'));
-    }
 
-    function logout(){
-      sessionStorage.removeItem(ADMIN_PASS_KEY);
-      document.getElementById('adminUI').style.display='none';
-      document.getElementById('loginCard').style.display='block';
-    }
-
-    async function uploadAndAdd(){
-      const fileInput = document.getElementById('n_image');
-      const pass = sessionStorage.getItem(ADMIN_PASS_KEY) || '';
-      if(!pass){ alert('Спочатку увійдіть'); return; }
-      if(fileInput.files && fileInput.files[0]){
-        const fd = new FormData();
-        fd.append('image', fileInput.files[0]);
-        fd.append('pass', pass);
-        const res = await fetch('/api/admin/upload-image', { method:'POST', body: fd });
-        const j = await res.json();
-        if(res.ok && j.path){
-          await addNews({ img: j.path });
-        } else {
-          alert(j.error || 'Завантаження не вдалося');
+        // Тріщини
+        function drawCracks() {
+            const c = document.getElementById('crackCanvas'); const ctx = c.getContext('2d');
+            c.width=window.innerWidth; c.height=window.innerHeight; c.style.display='block';
+            ctx.strokeStyle='white'; ctx.lineWidth=1.5;
+            for(let i=0; i<15; i++){
+                ctx.beginPath(); ctx.moveTo(c.width/2, c.height/2);
+                let x=c.width/2, y=c.height/2;
+                for(let j=0; j<10; j++){ x+=(Math.random()-0.5)*300; y+=(Math.random()-0.5)*300; ctx.lineTo(x,y); }
+                ctx.stroke();
+            }
+            ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(0,0, c.width, c.height);
         }
-      } else {
-        await addNews({});
-      }
-    }
 
-    async function addWithoutUpload(){ await addNews({}); }
+        async function login() {
+            const pass = document.getElementById('adminPass').value;
+            try {
+                const res = await fetch('/api/admin/login', {
+                    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({pass})
+                });
+                const data = await res.json();
+                
+                if(res.ok) {
+                    CURRENT_PASS = pass;
+                    document.getElementById('loginBox').style.display='none';
+                    document.getElementById('adminPanel').style.display='block';
+                    fetchLogs(); renderNews();
+                } else if(res.status === 403 || data.showPedro) {
+                    document.getElementById('hammer').classList.add('hammer-hit');
+                    setTimeout(() => {
+                        playHitSound(); drawCracks();
+                        document.getElementById('loginBox').innerHTML = `
+                            <h1 style="color:#ff3b30">БЛОК!</h1>
+                            <img src="https://media.tenor.com/79_u2v0vXRAAAAAM/pedro-raccoon.gif" style="width:100%; border-radius:10px;">
+                            <audio src="https://www.myinstants.com/media/sounds/pedro-pedro-pedro-pedro-pe.mp3" autoplay loop></audio>
+                        `;
+                    }, 400);
+                } else { alert(data.error || "Невірний пароль!"); }
+            } catch(e) { alert("Сервер недоступний"); }
+        }
 
-    async function addNews(opts){
-      const pass = sessionStorage.getItem(ADMIN_PASS_KEY) || '';
-      if(!pass){ alert('Спочатку увійдіть'); return; }
-      const payload = {
-        pass,
-        title: document.getElementById('n_title').value || '',
-        category: document.getElementById('n_category').value || '',
-        content: document.getElementById('n_content').value || '',
-        link: document.getElementById('n_link').value || '',
-        img: opts.img || ''
-      };
-      const res = await fetch('/api/admin/add-news', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-      const j = await res.json();
-      if(res.ok && j.success){
-        document.getElementById('addResult').textContent = 'Новина додана';
-        loadNews();
-      } else {
-        alert(j.error || 'Додавання не вдалося');
-      }
-    }
+        async function fetchLogs() {
+            try {
+                const res = await fetch(`/api/admin/logs?pass=${CURRENT_PASS}`);
+                if (res.ok) {
+                    const text = await res.text();
+                    const el = document.getElementById('logConsole');
+                    el.innerText = text; el.scrollTop = el.scrollHeight;
+                }
+            } catch(e) {}
+        }
 
-    async function fetchLogs(){
-      const pass = sessionStorage.getItem(ADMIN_PASS_KEY) || '';
-      if(!pass){ alert('Спочатку увійдіть'); return; }
-      const res = await fetch('/api/admin/logs?pass=' + encodeURIComponent(pass));
-      const j = await res.json();
-      if(res.ok && j.success){
-        document.getElementById('logsPre').textContent = j.lines.join('\n');
-      } else {
-        alert(j.error || 'Не вдалося отримати логи');
-      }
-    }
+        async function addNews() {
+            const title = document.getElementById("newsTitle").value;
+            if (!title) return alert("Введіть заголовок!");
+            
+            const formData = new FormData();
+            formData.append("pass", CURRENT_PASS);
+            formData.append("title", title);
+            formData.append("category", document.getElementById("newsCategory").value);
+            formData.append("content", document.getElementById("newsContent").value);
+            if(document.getElementById("newsImageInput").files[0]) {
+                formData.append("image", document.getElementById("newsImageInput").files[0]);
+            }
 
-    async function loadNews(){
-      const res = await fetch('/api/news');
-      const arr = await res.json();
-      const container = document.getElementById('newsList');
-      container.innerHTML = '';
-      if(!Array.isArray(arr) || arr.length===0){
-        container.innerHTML = '<div class="placeholder">Новин поки що немає</div>';
-        return;
-      }
-      arr.slice(0,30).forEach(n=>{
-        const el = document.createElement('div');
-        el.style.borderBottom = '1px solid #eee';
-        el.style.padding = '10px 0';
-        el.innerHTML = `<strong>${escapeHtml(n.title)}</strong> <span style="color:#666">[${escapeHtml(n.category||'')}]</span>
-          <div style="font-size:13px;color:#444">${escapeHtml(n.content||'')}</div>
-          <div style="margin-top:6px"><img src="${escapeHtml(n.img||'/assets/img/auto-news.jpg')}" style="max-width:160px;border-radius:6px"></div>`;
-        container.appendChild(el);
-      });
-    }
+            try {
+                const res = await fetch('/api/news/add', { method: 'POST', body: formData });
+                if (res.ok) { alert("Опубліковано!"); location.reload(); }
+                else alert("Помилка публікації");
+            } catch (err) { alert("Помилка з'єднання"); }
+        }
 
-    function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+        async function renderNews() {
+            const res = await fetch('/api/news');
+            const news = await res.json();
+            document.getElementById("adminNewsList").innerHTML = news.map(n => `
+                <div class="news-item">
+                    <img src="${n.img || ''}" onerror="this.src='assets/img/auto-news.jpg'">
+                    <h4 style="font-size:12px; margin:5px 0;">${n.title}</h4>
+                    <button class="btn-del" onclick="deleteNews('${n.id}')">Видалити</button>
+                </div>
+            `).join('');
+        }
 
-    async function downloadNews(){
-      const res = await fetch('/api/news');
-      const j = await res.json();
-      const blob = new Blob([JSON.stringify(j, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = 'news-data.json'; a.click();
-      URL.revokeObjectURL(url);
-    }
-
-    (function init(){
-      const pass = sessionStorage.getItem(ADMIN_PASS_KEY);
-      if(pass){ document.getElementById('loginCard').style.display='none'; document.getElementById('adminUI').style.display='block'; loadNews(); fetchLogs(); }
-    })();
-  </script>
+        async function deleteNews(id) {
+            if (!confirm("Видалити новину?")) return;
+            try {
+                const res = await fetch('/api/news/delete', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ pass: CURRENT_PASS, id: id })
+                });
+                if (res.ok) { renderNews(); fetchLogs(); }
+                else alert("Помилка при видаленні");
+            } catch (e) { alert("Помилка з'єднання"); }
+        }
+    </script>
 </body>
 </html>
