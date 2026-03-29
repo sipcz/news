@@ -1,179 +1,26 @@
-import express from "express";
-import cors from "cors";
-import path from "path";
-import { fileURLToPath } from "url";
-import https from "https"; 
-import fs from "fs";
-import axios from "axios";
-import Parser from "rss-parser";
-import helmet from "helmet";
-import rateLimit from "express-rate-limit";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-import newsRoutes from "./routes/news.js";
-import taxiRoute from "./routes/taxi.js";
-
-const app = express();
-const parser = new Parser();
-
-// --- КОНФІГУРАЦІЯ ---
-const BOT_TOKEN = process.env.BOT_TOKEN || "8381037035:AAGhfS8LbZQCgPf_oAVyvG9tXDLtfAxGVug";
-const CHAT_ID = process.env.CHAT_ID || "8257665442";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "pedro2026";
-const NEWS_FILE = path.join(__dirname, "news-data.json");
-const uploadDir = path.join(__dirname, "uploads");
-
-app.use(helmet({ contentSecurityPolicy: false }));
-app.use(cors());
-app.use(express.json());
-
-// Загальний захист
-const apiLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 300, 
-    message: "Захист активний. Спробуйте пізніше."
-});
-app.use("/api/", apiLimiter);
-
-const loginLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 10, 
-});
-
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-if (!fs.existsSync(NEWS_FILE)) fs.writeFileSync(NEWS_FILE, JSON.stringify([]));
-
-// --- СИСТЕМА СПОВІЩЕНЬ ---
-const sendToTg = async (msg, type = "INFO") => {
-    const icons = { INFO: "ℹ️", WARN: "⚠️", ALERT: "🚨", SUCCESS: "✅", MSG: "📩" };
+// --- ОБРОБКА ФОРМИ "НАПИСАТИ НАМ" ---
+app.post("/api/taxi", async (req, res) => {
     try {
-        await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-            chat_id: CHAT_ID,
-            text: `${icons[type] || "🔔"} <b>ПОРТАЛ LIVE:</b>\n${msg}`,
-            parse_mode: "HTML"
-        });
-    } catch (e) {
-        console.error("❌ TG ERROR:", e.message);
+        const { name, phone, address, comment } = req.body;
+        
+        // Формуємо текст для тебе
+        const msg = `📬 <b>НОВЕ ПОВІДОМЛЕННЯ:</b>\n\n` +
+                    `👤 <b>Ім'я:</b> ${name}\n` +
+                    `📞 <b>Тел:</b> ${phone}\n` +
+                    `📍 <b>Тема/Адреса:</b> ${address || "Не вказано"}\n` +
+                    `💬 <b>Текст:</b> ${comment}`;
+        
+        // Відправляємо в Телеграм (обов'язково з await)
+        await sendToTg(msg, "MSG");
+        
+        console.log(`📩 Повідомлення від ${name} надіслано в ТГ`);
+        
+        // ВІДПОВІДАЄМО КЛІЄНТУ (щоб вікно знало, що все добре)
+        return res.json({ success: true, message: "Повідомлення отримано" });
+        
+    } catch (err) {
+        console.error("❌ Помилка обробки форми:", err.message);
+        // Якщо навіть ТГ впав, кажемо клієнту, що щось не так
+        return res.status(500).json({ success: false, error: "Серверна помилка" });
     }
-};
-
-// --- АНТИ-СОН ---
-const keepAlive = () => {
-    const url = "https://news2-9mlo.onrender.com/";
-    setInterval(() => {
-        https.get(url, (res) => {
-            console.log(`☕️ Будильник: Код ${res.statusCode}`);
-        }).on("error", (err) => console.log("Сон: " + err.message));
-    }, 12 * 60 * 1000); 
-};
-
-// --- ГРАБЕР НОВИН (БЕЗ ПЕРЕКЛАДУ, КОЖНІ 10 ХВИЛИН) ---
-const RSS_SOURCES = [
-    { name: "ТСН Україна", url: "https://tsn.ua/rss/full.rss" },
-    { name: "MDR Саксонія", url: "https://www.mdr.de/nachrichten/sachsen/index-rss.xml" },
-    { name: "Дрезден Офіційно", url: "https://www.dresden.de/rss/de/presseservice.xml" },
-    { name: "TAG24 Дрезден", url: "https://www.tag24.de/dresden/rss" },
-    { name: "DW Німеччина", url: "https://rss.dw.com/xml/rss-ukr-all" }
-];
-
-async function autoFetchNews() {
-    console.log("🔄 Перевірка новин (10-хвилинний цикл)...");
-    try {
-        const fileData = fs.readFileSync(NEWS_FILE, "utf-8");
-        let news = JSON.parse(fileData || "[]");
-        let addedCount = 0;
-
-        for (const source of RSS_SOURCES) {
-            try {
-                const response = await axios.get(source.url, { 
-                    timeout: 20000, 
-                    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36' } 
-                });
-                const feed = await parser.parseString(response.data);
-
-                for (const item of feed.items) {
-                    if (!news.some(n => n.title === item.title)) {
-                        const pubDate = item.pubDate ? new Date(item.pubDate) : new Date();
-                        news.push({
-                            id: pubDate.getTime() + Math.floor(Math.random() * 1000),
-                            date: pubDate.toLocaleString('uk-UA', { timeZone: 'Europe/Berlin' }),
-                            title: item.title.trim(),
-                            category: source.name,
-                            img: "assets/img/auto-news.jpg",
-                            content: (item.contentSnippet || item.content || "").replace(/<[^>]*>?/gm, '').trim().substring(0, 500) + "...",
-                            link: item.link
-                        });
-                        addedCount++;
-                    }
-                }
-            } catch (err) { console.log(`❌ Помилка ${source.name}`); }
-        }
-
-        if (addedCount > 0) {
-            news.sort((a, b) => Number(b.id) - Number(a.id));
-            const finalNews = news.slice(0, 100);
-            fs.writeFileSync(NEWS_FILE, JSON.stringify(finalNews, null, 2));
-            console.log(`✅ Додано новин: ${addedCount}`);
-        }
-    } catch (err) { console.error("Помилка грабера."); }
-}
-
-// Запуск грабера кожні 10 хвилин
-setInterval(autoFetchNews, 10 * 60 * 1000);
-setTimeout(autoFetchNews, 5000);
-
-// --- МАРШРУТИ ---
-
-// Обробка форми "Написати нам" (Таксі/Повідомлення)
-app.post("/api/taxi", async (req, res, next) => {
-    const { name, phone, address, comment } = req.body;
-    const msg = `📬 <b>НОВЕ ПОВІДОМЛЕННЯ З САЙТУ:</b>\n\n👤 Ім'я: ${name}\n📞 Тел: ${phone}\n📍 Адреса/Тема: ${address || "Не вказано"}\n💬 Коментар: ${comment}`;
-    
-    await sendToTg(msg, "MSG");
-    next(); // передаємо далі в taxiRoute для збереження в базу
-});
-
-app.get("/api/news", (req, res) => {
-    try {
-        let news = JSON.parse(fs.readFileSync(NEWS_FILE, "utf-8") || "[]");
-        res.json(news);
-    } catch (err) { res.status(500).send("Error"); }
-});
-
-app.use((req, res, next) => {
-    const badPaths = ['.env', '.php', 'wp-admin', 'config'];
-    if (badPaths.some(p => req.url.toLowerCase().includes(p))) {
-        const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-        sendToTg(`🧨 <b>СКАНЕР:</b> <code>${req.url}</code>\nIP: <code>${ip}</code>`, "ALERT");
-        return res.status(403).send("Forbidden");
-    }
-    next();
-});
-
-app.post('/api/admin/login', loginLimiter, async (req, res) => {
-    const { pass } = req.body;
-    if (pass === ADMIN_PASSWORD) {
-        return res.json({ success: true });
-    } else {
-        const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-        await sendToTg(`🧨 Невдалий вхід!\nIP: <code>${ip}</code>\nПароль: <code>${pass}</code>`, "ALERT");
-        return res.status(401).json({ error: "Error" });
-    }
-});
-
-app.use(express.static(path.join(__dirname, "public")));
-app.use(express.static(path.join(__dirname, "assets")));
-app.use("/uploads", express.static(uploadDir));
-app.use("/api/news", newsRoutes);
-app.use("/api/taxi", taxiRoute);
-
-app.get("*", (req, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, async () => {
-    console.log(`--- ПОРТАЛ LIVE ДРЕЗДЕН ЗАПУЩЕНО ---`);
-    await sendToTg("🚀 Сервер активний і новини оновлюються кожні 10 хв!", "INFO");
-    keepAlive();
 });
