@@ -1,198 +1,176 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-  <meta charset="UTF-8" />
-  <title>Панель керування — LIVE</title>
+  <meta charset="utf-8" />
+  <title>Адмінка — LIVE</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
-    body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:#f0f2f5; overflow-x:hidden; }
-    .card { background:#fff; margin:20px auto; padding:20px; max-width:520px; border-radius:12px; text-align:center; box-shadow:0 4px 10px rgba(0,0,0,0.08); }
-    input, textarea, select { width:100%; padding:10px; margin:10px 0; border:1px solid #e3e6ea; border-radius:8px; box-sizing:border-box; font-size:15px; }
-    .btn { background:#111; color:#ffd700; border:none; padding:12px 16px; border-radius:8px; cursor:pointer; font-weight:700; font-size:15px; }
-    .btn.secondary { background:#e9ecef; color:#111; font-weight:600; }
-    .row { display:flex; gap:10px; }
-    .row .btn { flex:1; }
-
-    /* ЕФЕКТИ */
-    #crackCanvas { position:fixed; inset:0; z-index:9999; display:none; pointer-events:none; }
-    #hammer { position:fixed; top:50%; left:50%; font-size:80px; z-index:10000; display:none; transform: translate(-50%, -200%); }
-    .hammer-hit { display:block!important; animation: hit 0.4s forwards; }
-    @keyframes hit { 0%{transform:translate(-50%,-200%) rotate(-45deg);} 100%{transform:translate(-50%,-50%) rotate(0deg);} }
-
-    /* Забезпечуємо адаптивність */
-    @media (max-width:520px) {
-      .card { margin:16px; padding:16px; border-radius:10px; }
-      #hammer { font-size:64px; }
-    }
+    body{font-family:system-ui,Arial;margin:0;background:#f3f4f6;padding:20px}
+    .wrap{max-width:900px;margin:0 auto}
+    .card{background:#fff;padding:16px;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,0.06);margin-bottom:16px}
+    input,textarea,select{width:100%;padding:10px;margin-top:8px;border:1px solid #e6e9ee;border-radius:8px;box-sizing:border-box}
+    .row{display:flex;gap:10px}
+    .btn{background:#111;color:#ffd700;padding:10px 14px;border-radius:8px;border:none;cursor:pointer;font-weight:700}
+    .btn.secondary{background:#e9ecef;color:#111}
+    label{font-weight:600}
+    pre{white-space:pre-wrap;word-break:break-word;background:#0b1220;color:#fff;padding:12px;border-radius:8px;overflow:auto}
   </style>
 </head>
 <body>
-  <canvas id="crackCanvas" aria-hidden="true"></canvas>
-  <div id="hammer" aria-hidden="true">🔨</div>
-
-  <div id="loginBox" class="card" role="region" aria-label="Вхід в адмінку">
-    <h2>Вхід в адмінку</h2>
-    <input type="password" id="adminPass" placeholder="Пароль" aria-label="Пароль адміністратора" />
-    <div class="row">
-      <button id="loginBtn" class="btn" onclick="login()">Увійти</button>
-      <button class="btn secondary" onclick="goHome()">На головну</button>
+  <div class="wrap">
+    <div id="loginCard" class="card">
+      <h2>Вхід в адмінку</h2>
+      <input id="pass" type="password" placeholder="Пароль адміністратора" />
+      <div style="margin-top:10px">
+        <button class="btn" onclick="doLogin()">Увійти</button>
+        <button class="btn secondary" onclick="location.href='/'">На головну</button>
+      </div>
+      <p style="color:#666;margin-top:8px">Пароль не зберігається на сервері в цій формі — використовується для авторизації запитів.</p>
     </div>
-    <p style="font-size:13px;color:#666;margin-top:8px;">Після трьох невдалих спроб IP буде тимчасово заблоковано.</p>
-  </div>
 
-  <div id="adminPanel" style="display:none; padding:20px;">
-    <div class="card">
-      <h3>Панель активна</h3>
-      <p>Ви можете додавати новини.</p>
-      <div style="margin-top:12px;">
-        <button class="btn" onclick="goHome()">Повернутись на головну</button>
+    <div id="adminUI" style="display:none">
+      <div class="card">
+        <h3>Додати новину</h3>
+        <label>Заголовок</label>
+        <input id="n_title" />
+        <label>Категорія</label>
+        <input id="n_category" placeholder="Наприклад: Адмін, Локальні, DW" />
+        <label>Контент (короткий)</label>
+        <textarea id="n_content" rows="4"></textarea>
+        <label>Посилання (опціонально)</label>
+        <input id="n_link" />
+        <label>Зображення (опціонально) — завантажте файл</label>
+        <input id="n_image" type="file" accept="image/*" />
+        <div style="margin-top:10px" class="row">
+          <button class="btn" onclick="uploadAndAdd()">Завантажити і додати</button>
+          <button class="btn secondary" onclick="addWithoutUpload()">Додати без зображення</button>
+        </div>
+        <div id="addResult" style="margin-top:10px;color:green"></div>
+      </div>
+
+      <div class="card">
+        <h3>Логи сервера (останні рядки)</h3>
+        <div style="margin-bottom:8px">
+          <button class="btn" onclick="fetchLogs()">Оновити логи</button>
+          <button class="btn secondary" onclick="downloadNews()">Завантажити news-data.json</button>
+        </div>
+        <pre id="logsPre">Натисніть "Оновити логи"</pre>
+      </div>
+
+      <div class="card">
+        <h3>Поточні новини (preview)</h3>
+        <div id="newsList"></div>
+      </div>
+
+      <div style="text-align:right;margin-bottom:40px">
+        <button class="btn secondary" onclick="logout()">Вийти</button>
       </div>
     </div>
   </div>
 
   <script>
-    // Resize canvas to full viewport
-    const crackCanvas = document.getElementById('crackCanvas');
-    function resizeCanvas() {
-      crackCanvas.width = window.innerWidth;
-      crackCanvas.height = window.innerHeight;
-    }
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
-
-    // Play short hit sound (must be triggered by user gesture)
-    function playHitSound() {
-      try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator();
-        const g = ctx.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(120, ctx.currentTime);
-        g.gain.setValueAtTime(0.5, ctx.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
-        osc.connect(g); g.connect(ctx.destination);
-        osc.start(); osc.stop(ctx.currentTime + 0.35);
-      } catch (e) {
-        // Some browsers block AudioContext until user interacts; ignore silently
-      }
+    const ADMIN_PASS_KEY = 'admin_pass_temp'; // тимчасово зберігаємо в сесії для запитів (не безпечно для публічних ПК)
+    function doLogin(){
+      const pass = document.getElementById('pass').value || '';
+      fetch('/api/admin/login', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ pass })
+      }).then(r=>r.json().then(j=>({status:r.status, body:j}))).then(res=>{
+        if(res.status===200){ sessionStorage.setItem(ADMIN_PASS_KEY, pass); document.getElementById('loginCard').style.display='none'; document.getElementById('adminUI').style.display='block'; loadNews(); fetchLogs(); }
+        else if(res.status===403){ alert('Ваш IP заблоковано'); }
+        else alert(res.body && res.body.error ? res.body.error : 'Невдала спроба входу');
+      }).catch(()=>alert('Помилка з’єднання'));
     }
 
-    // Draw cracks effect
-    function drawCracks() {
-      const c = crackCanvas;
-      const ctx = c.getContext('2d');
-      resizeCanvas();
-      c.style.display = 'block';
-      ctx.clearRect(0,0,c.width,c.height);
-      ctx.strokeStyle = 'rgba(255,255,255,0.95)';
-      ctx.lineWidth = 1.5;
-      const cx = c.width / 2;
-      const cy = c.height / 2;
-      for (let i = 0; i < 18; i++) {
-        ctx.beginPath();
-        ctx.moveTo(cx, cy);
-        let x = cx, y = cy;
-        const segments = 10 + Math.floor(Math.random() * 6);
-        for (let j = 0; j < segments; j++) {
-          x += (Math.random() - 0.5) * (120 + Math.random() * 220);
-          y += (Math.random() - 0.5) * (120 + Math.random() * 220);
-          ctx.lineTo(x, y);
-        }
-        ctx.stroke();
-      }
-    }
+    function logout(){ sessionStorage.removeItem(ADMIN_PASS_KEY); document.getElementById('adminUI').style.display='none'; document.getElementById('loginCard').style.display='block'; }
 
-    // Utility: safe JSON parse
-    async function safeJson(res) {
-      try { return await res.json(); } catch (e) { return null; }
-    }
-
-    // Show hammer animation and cracks
-    function showHammerAndCracks() {
-      const hammer = document.getElementById('hammer');
-      hammer.style.display = 'block';
-      hammer.classList.add('hammer-hit');
-      hammer.addEventListener('animationend', () => {
-        hammer.classList.remove('hammer-hit');
-        // keep hammer visible briefly then hide
-        setTimeout(() => { hammer.style.display = 'none'; }, 600);
-      }, { once: true });
-      // play sound and draw cracks after hammer hits
-      setTimeout(() => { playHitSound(); drawCracks(); }, 380);
-    }
-
-    // Navigate to main site root
-    function goHome() {
-      window.location.href = '/';
-    }
-
-    // Login flow
-    async function login() {
-      const pass = document.getElementById('adminPass').value || '';
-      const loginBtn = document.getElementById('loginBtn');
-      loginBtn.disabled = true;
-      try {
-        const res = await fetch('/api/admin/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ pass })
-        });
-        const data = await safeJson(res);
-        if (res.ok) {
-          // success
-          document.getElementById('loginBox').style.display = 'none';
-          document.getElementById('adminPanel').style.display = 'block';
-        } else if (res.status === 403) {
-          // blocked — show hammer/cracks and replace content with blocked message
-          showHammerAndCracks();
-          setTimeout(() => {
-            const box = document.getElementById('loginBox');
-            box.innerHTML = '';
-            const h = document.createElement('h1');
-            h.style.color = 'red';
-            h.textContent = 'IP ЗАБЛОКОВАНО!';
-            box.appendChild(h);
-
-            const img = document.createElement('img');
-            img.src = 'https://media.tenor.com/79_u2v0vXRAAAAAM/pedro-raccoon.gif';
-            img.alt = 'Pedro';
-            img.style.width = '100%';
-            img.style.borderRadius = '8px';
-            box.appendChild(img);
-
-            const p = document.createElement('p');
-            p.style.marginTop = '10px';
-            p.style.color = '#333';
-            p.textContent = 'Щоб відтворити звук, натисніть кнопку нижче (браузери блокують автоплей).';
-            box.appendChild(p);
-
-            const playBtn = document.createElement('button');
-            playBtn.className = 'btn';
-            playBtn.textContent = 'Відтворити Pedro';
-            playBtn.onclick = () => {
-              // play remote audio via user gesture
-              const audio = new Audio('https://www.myinstants.com/media/sounds/pedro-pedro-pedro-pedro-pe.mp3');
-              audio.play().catch(() => {});
-            };
-            box.appendChild(playBtn);
-
-            const homeBtn = document.createElement('button');
-            homeBtn.className = 'btn secondary';
-            homeBtn.style.marginTop = '8px';
-            homeBtn.textContent = 'На головну';
-            homeBtn.onclick = goHome;
-            box.appendChild(homeBtn);
-          }, 420);
+    async function uploadAndAdd(){
+      const fileInput = document.getElementById('n_image');
+      const pass = sessionStorage.getItem(ADMIN_PASS_KEY) || '';
+      if(!pass){ alert('Спочатку увійдіть'); return; }
+      if(fileInput.files && fileInput.files[0]){
+        const fd = new FormData();
+        fd.append('image', fileInput.files[0]);
+        fd.append('pass', pass);
+        const res = await fetch('/api/admin/upload-image', { method:'POST', body: fd });
+        const j = await res.json();
+        if(res.ok && j.path){
+          // додати новину з отриманим шляхом
+          await addNews({ img: j.path });
         } else {
-          // other errors
-          alert((data && data.error) ? data.error : 'Невдала спроба входу');
+          alert(j.error || 'Завантаження не вдалося');
         }
-      } catch (e) {
-        alert('Помилка з’єднання. Спробуйте пізніше.');
-      } finally {
-        loginBtn.disabled = false;
+      } else {
+        // без файлу — просто додати
+        await addNews({});
       }
     }
+
+    async function addWithoutUpload(){ await addNews({}); }
+
+    async function addNews(opts){
+      const pass = sessionStorage.getItem(ADMIN_PASS_KEY) || '';
+      if(!pass){ alert('Спочатку увійдіть'); return; }
+      const payload = {
+        pass,
+        title: document.getElementById('n_title').value || '',
+        category: document.getElementById('n_category').value || '',
+        content: document.getElementById('n_content').value || '',
+        link: document.getElementById('n_link').value || '',
+        img: opts.img || ''
+      };
+      const res = await fetch('/api/admin/add-news', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+      const j = await res.json();
+      if(res.ok && j.success){
+        document.getElementById('addResult').textContent = 'Новина додана';
+        loadNews();
+      } else {
+        alert(j.error || 'Додавання не вдалося');
+      }
+    }
+
+    async function fetchLogs(){
+      const pass = sessionStorage.getItem(ADMIN_PASS_KEY) || '';
+      if(!pass){ alert('Спочатку увійдіть'); return; }
+      const res = await fetch('/api/admin/logs?pass=' + encodeURIComponent(pass));
+      const j = await res.json();
+      if(res.ok && j.success){
+        document.getElementById('logsPre').textContent = j.lines.join('\n');
+      } else {
+        alert(j.error || 'Не вдалося отримати логи');
+      }
+    }
+
+    async function loadNews(){
+      const res = await fetch('/api/news');
+      const arr = await res.json();
+      const container = document.getElementById('newsList');
+      container.innerHTML = '';
+      if(!Array.isArray(arr) || arr.length===0){ container.innerHTML = '<div class="placeholder">Новин поки що немає</div>'; return; }
+      arr.slice(0,30).forEach(n=>{
+        const el = document.createElement('div');
+        el.style.borderBottom = '1px solid #eee';
+        el.style.padding = '10px 0';
+        el.innerHTML = `<strong>${escapeHtml(n.title)}</strong> <span style="color:#666">[${escapeHtml(n.category||'')}]</span><div style="font-size:13px;color:#444">${escapeHtml(n.content||'')}</div><div style="margin-top:6px"><img src="${escapeHtml(n.img||'/assets/img/auto-news.jpg')}" style="max-width:160px;border-radius:6px"></div>`;
+        container.appendChild(el);
+      });
+    }
+
+    function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+    async function downloadNews(){
+      const res = await fetch('/api/news');
+      const j = await res.json();
+      const blob = new Blob([JSON.stringify(j, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'news-data.json'; a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // при завантаженні сторінки — якщо є pass, автоматично показати UI
+    (function init(){
+      const pass = sessionStorage.getItem(ADMIN_PASS_KEY);
+      if(pass){ document.getElementById('loginCard').style.display='none'; document.getElementById('adminUI').style.display='block'; loadNews(); fetchLogs(); }
+    })();
   </script>
 </body>
 </html>
