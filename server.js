@@ -30,10 +30,10 @@ const NEWS_FILE = path.join(__dirname, "news-data.json");
 const LOG_FILE = path.join(__dirname, "server.log");
 const UPLOADS_DIR = path.join(__dirname, "assets/news");
 
-// Ініціалізація папок та файлів
-if (!fs.existsSync(LOG_FILE)) fs.writeFileSync(LOG_FILE, "");
+// Ініціалізація
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 if (!fs.existsSync(NEWS_FILE)) fs.writeFileSync(NEWS_FILE, "[]");
+if (!fs.existsSync(LOG_FILE)) fs.writeFileSync(LOG_FILE, "");
 
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors());
@@ -61,13 +61,77 @@ const writeLog = async (msg, type = "INFO") => {
     }
 };
 
-// --- ГРАБЕР НОВИН (З ПОШУКОМ ФОТО) ---
+// --- ЗАХИСТ ТА ПРИКОЛ ПРИ ВХОДІ ---
+const loginAttempts = new Map();
+const blockedIPs = new Map();
+
+app.post('/api/admin/login', async (req, res) => {
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const now = Date.now();
+
+    if (blockedIPs.has(ip)) {
+        if (now < blockedIPs.get(ip)) {
+            // Якщо в бані - повертаємо статус 403 і сигнал адмінці показати Педро
+            return res.status(403).json({ 
+                error: "IP ЗАБЛОКОВАНО! Танцюй з Педро 🕺", 
+                showPedro: true 
+            });
+        }
+        blockedIPs.delete(ip);
+    }
+
+    if (req.body.pass === ADMIN_PASSWORD) {
+        loginAttempts.delete(ip);
+        await writeLog(`Успішний вхід. IP: ${ip}`, "SUCCESS");
+        return res.json({ success: true });
+    } else {
+        const count = (loginAttempts.get(ip) || 0) + 1;
+        loginAttempts.set(ip, count);
+        
+        await writeLog(`Невдалий вхід! IP: ${ip}, спроба ${count}`, "WARN");
+
+        if (count >= 5) {
+            blockedIPs.set(ip, now + 3600000); // Блок на 1 годину
+            await writeLog(`🚨 IP ${ip} ЗАБАНЕНО за перебір паролів!`, "ALERT");
+            return res.status(403).json({ 
+                error: "ЗАБАГАТО СПРОБ! IP ЗАБЛОКОВАНО.", 
+                showPedro: true 
+            });
+        }
+        res.status(401).json({ error: "Невірний пароль" });
+    }
+});
+
+// --- ОЧИЩЕННЯ СТАРИХ НОВИН ТА ФОТО ---
+function autoCleanOldNews() {
+    try {
+        const data = fs.readFileSync(NEWS_FILE, "utf-8");
+        let news = JSON.parse(data || "[]");
+        const now = Date.now();
+        const twoDaysInMs = 2 * 24 * 60 * 60 * 1000;
+
+        const toDelete = news.filter(n => (now - n.id) >= twoDaysInMs);
+        toDelete.forEach(n => {
+            if (n.img && n.img.startsWith('assets/news/')) {
+                const filePath = path.join(__dirname, n.img);
+                if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+            }
+        });
+
+        const filtered = news.filter(n => (now - n.id) < twoDaysInMs);
+        if (filtered.length !== news.length) {
+            fs.writeFileSync(NEWS_FILE, JSON.stringify(filtered, null, 2));
+            writeLog(`Чистка: видалено ${news.length - filtered.length} старих новин.`, "INFO");
+        }
+    } catch (err) {}
+}
+
+// --- ГРАБЕР НОВИН ---
 async function autoFetchNews() {
     try {
         let news = JSON.parse(fs.readFileSync(NEWS_FILE, "utf-8") || "[]");
-        let addedCount = 0;
-
         const RSS_SOURCES = [
+            { name: "ZAXID.NET", url: "https://zaxid.net/rss/all.xml" },
             { name: "ТСН Україна", url: "https://tsn.ua/rss/full.rss" },
             { name: "MDR Саксонія", url: "https://www.mdr.de/nachrichten/sachsen/index-rss.xml" },
             { name: "TAG24 Дрезден", url: "https://www.tag24.de/dresden/rss" },
@@ -78,93 +142,60 @@ async function autoFetchNews() {
             try {
                 const response = await axios.get(source.url, { timeout: 10000, headers: { 'User-Agent': 'Mozilla/5.0' } });
                 const feed = await parser.parseString(response.data);
-                
-                for (const item of feed.items) {
+                feed.items.forEach(item => {
                     if (!news.some(n => n.title === item.title)) {
                         const pubDate = item.pubDate ? new Date(item.pubDate) : new Date();
-                        
-                        // Пошук картинки
                         let imageUrl = "assets/img/auto-news.jpg";
-                        if (item.enclosure && item.enclosure.url) {
-                            imageUrl = item.enclosure.url;
-                        } else if (item.mediaContent && item.mediaContent.$ && item.mediaContent.$.url) {
-                            imageUrl = item.mediaContent.$.url;
-                        } else if (item.content && item.content.includes('<img')) {
-                            const imgMatch = item.content.match(/src="([^"]+)"/);
-                            if (imgMatch) imageUrl = imgMatch[1];
-                        }
+                        if (item.enclosure?.url) imageUrl = item.enclosure.url;
+                        else if (item.mediaContent?.$.url) imageUrl = item.mediaContent.$.url;
 
                         news.push({
-                            id: pubDate.getTime() + Math.floor(Math.random() * 100),
+                            id: pubDate.getTime(),
                             date: pubDate.toLocaleString('uk-UA', { timeZone: 'Europe/Berlin' }),
                             title: item.title.trim(),
                             category: source.name,
                             img: imageUrl,
-                            content: (item.contentSnippet || item.content || "").replace(/<[^>]*>?/gm, '').trim().substring(0, 400) + "...",
+                            content: (item.contentSnippet || "").substring(0, 400) + "...",
                             link: item.link
                         });
-                        addedCount++;
                     }
-                }
-            } catch (err) { console.log(`Помилка джерела ${source.name}`); }
+                });
+            } catch (err) {}
         }
-
-        if (addedCount > 0) {
-            news.sort((a, b) => b.id - a.id);
-            fs.writeFileSync(NEWS_FILE, JSON.stringify(news.slice(0, 100), null, 2));
-            console.log(`Додано ${addedCount} новин.`);
-        }
-    } catch (err) { console.error("Грабер error:", err); }
+        news.sort((a, b) => b.id - a.id);
+        fs.writeFileSync(NEWS_FILE, JSON.stringify(news.slice(0, 150), null, 2));
+        autoCleanOldNews();
+    } catch (err) {}
 }
-
-setInterval(autoFetchNews, 15 * 60 * 1000);
+setInterval(autoFetchNews, 20 * 60 * 1000);
 setTimeout(autoFetchNews, 5000);
 
 // --- API ---
 app.get("/api/news", (req, res) => {
-    try {
-        const data = fs.readFileSync(NEWS_FILE, "utf-8");
-        res.json(JSON.parse(data || "[]"));
-    } catch (e) { res.json([]); }
+    res.json(JSON.parse(fs.readFileSync(NEWS_FILE, "utf-8") || "[]"));
 });
 
-app.post("/api/news/add", upload.single("image"), async (req, res) => {
-    const { pass, title, category, content } = req.body;
-    if (pass !== ADMIN_PASSWORD) return res.status(401).json({ error: "No access" });
-    try {
-        let news = JSON.parse(fs.readFileSync(NEWS_FILE, "utf-8") || "[]");
-        news.unshift({
-            id: Date.now(),
-            date: new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Berlin' }),
-            title: title,
-            category: category,
-            content: content,
-            img: req.file ? `assets/news/${req.file.filename}` : "assets/img/auto-news.jpg"
-        });
-        fs.writeFileSync(NEWS_FILE, JSON.stringify(news.slice(0, 200), null, 2));
-        res.json({ success: true });
-    } catch (e) { res.status(500).json({ error: "Server error" }); }
+app.post("/api/news/add", upload.single("image"), (req, res) => {
+    if (req.body.pass !== ADMIN_PASSWORD) return res.status(401).send("No access");
+    let news = JSON.parse(fs.readFileSync(NEWS_FILE, "utf-8") || "[]");
+    news.unshift({
+        id: Date.now(),
+        date: new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Berlin' }),
+        title: req.body.title,
+        category: req.body.category,
+        content: req.body.content,
+        img: req.file ? `assets/news/${req.file.filename}` : "assets/img/auto-news.jpg"
+    });
+    fs.writeFileSync(NEWS_FILE, JSON.stringify(news.slice(0, 200), null, 2));
+    res.json({ success: true });
 });
 
-app.post("/api/news/delete", async (req, res) => {
-    const { pass, id } = req.body;
-    if (pass !== ADMIN_PASSWORD) return res.status(401).json({ error: "No access" });
-    try {
-        let news = JSON.parse(fs.readFileSync(NEWS_FILE, "utf-8") || "[]");
-        news = news.filter(n => n.id != id);
-        fs.writeFileSync(NEWS_FILE, JSON.stringify(news, null, 2));
-        res.json({ success: true });
-    } catch (e) { res.status(500).json({ error: "Server error" }); }
-});
-
-app.post('/api/admin/login', async (req, res) => {
-    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-    if (req.body.pass === ADMIN_PASSWORD) {
-        await writeLog(`Успішний вхід. IP: ${ip}`, "SUCCESS");
-        return res.json({ success: true });
-    }
-    await writeLog(`Невдала спроба входу! IP: ${ip}`, "WARN");
-    return res.status(401).json({ error: "Невірний пароль" });
+app.post("/api/news/delete", (req, res) => {
+    if (req.body.pass !== ADMIN_PASSWORD) return res.status(401).send("No access");
+    let news = JSON.parse(fs.readFileSync(NEWS_FILE, "utf-8") || "[]");
+    news = news.filter(n => n.id != req.body.id);
+    fs.writeFileSync(NEWS_FILE, JSON.stringify(news, null, 2));
+    res.json({ success: true });
 });
 
 app.get('/api/admin/logs', (req, res) => {
@@ -172,16 +203,9 @@ app.get('/api/admin/logs', (req, res) => {
     res.type('text/plain').send(fs.readFileSync(LOG_FILE, "utf-8"));
 });
 
-// --- СТАТИКА ---
 app.use("/assets", express.static(path.join(__dirname, "assets")));
 app.use(express.static(path.join(__dirname, "public")));
 app.get("*", (req, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`СЕРВЕР ПОРТАЛУ ЗАПУЩЕНО`);
-    // Анти-сон для Render
-    setInterval(() => {
-        https.get(`https://${process.env.RENDER_EXTERNAL_HOSTNAME || 'localhost'}/`, () => {});
-    }, 10 * 60 * 1000);
-});
+app.listen(PORT, () => console.log(`СЕРВЕР ПОРТАЛУ LIVE ПРАЦЮЄ`));
