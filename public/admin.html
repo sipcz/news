@@ -9,11 +9,14 @@
     .wrap{max-width:900px;margin:0 auto}
     .card{background:#fff;padding:16px;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,0.06);margin-bottom:16px}
     input,textarea,select{width:100%;padding:10px;margin-top:8px;border:1px solid #e6e9ee;border-radius:8px;box-sizing:border-box}
-    .row{display:flex;gap:10px}
+    .row{display:flex;gap:10px;align-items:center}
     .btn{background:#111;color:#ffd700;padding:10px 14px;border-radius:8px;border:none;cursor:pointer;font-weight:700}
     .btn.secondary{background:#e9ecef;color:#111}
     label{font-weight:600}
     pre{white-space:pre-wrap;word-break:break-word;background:#0b1220;color:#fff;padding:12px;border-radius:8px;overflow:auto}
+    .topbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+    .small{font-size:13px;color:#666}
+    .placeholder{background:#f7f7f7;border:1px dashed #ddd;padding:12px;border-radius:8px;color:#666}
   </style>
 </head>
 <body>
@@ -21,14 +24,25 @@
     <div id="loginCard" class="card">
       <h2>Вхід в адмінку</h2>
       <input id="pass" type="password" placeholder="Пароль адміністратора" />
-      <div style="margin-top:10px">
+      <div style="margin-top:10px" class="row">
         <button class="btn" onclick="doLogin()">Увійти</button>
         <button class="btn secondary" onclick="location.href='/'">На головну</button>
       </div>
-      <p style="color:#666;margin-top:8px">Пароль не зберігається на сервері в цій формі — використовується для авторизації запитів.</p>
+      <p class="small" style="margin-top:8px">Пароль не зберігається на сервері в цій формі — використовується для авторизації запитів.</p>
     </div>
 
     <div id="adminUI" style="display:none">
+      <div class="topbar">
+        <div style="display:flex;gap:10px;align-items:center">
+          <strong>Адмінка — LIVE</strong>
+          <span class="small">— керування новинами та логами</span>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn secondary" onclick="location.href='/'">На головну</button>
+          <button class="btn secondary" onclick="logout()">Вийти</button>
+        </div>
+      </div>
+
       <div class="card">
         <h3>Додати новину</h3>
         <label>Заголовок</label>
@@ -50,7 +64,7 @@
 
       <div class="card">
         <h3>Логи сервера (останні рядки)</h3>
-        <div style="margin-bottom:8px">
+        <div style="margin-bottom:8px" class="row">
           <button class="btn" onclick="fetchLogs()">Оновити логи</button>
           <button class="btn secondary" onclick="downloadNews()">Завантажити news-data.json</button>
         </div>
@@ -61,27 +75,35 @@
         <h3>Поточні новини (preview)</h3>
         <div id="newsList"></div>
       </div>
-
-      <div style="text-align:right;margin-bottom:40px">
-        <button class="btn secondary" onclick="logout()">Вийти</button>
-      </div>
     </div>
   </div>
 
   <script>
     const ADMIN_PASS_KEY = 'admin_pass_temp'; // тимчасово зберігаємо в сесії для запитів (не безпечно для публічних ПК)
+
     function doLogin(){
       const pass = document.getElementById('pass').value || '';
       fetch('/api/admin/login', {
         method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ pass })
       }).then(r=>r.json().then(j=>({status:r.status, body:j}))).then(res=>{
-        if(res.status===200){ sessionStorage.setItem(ADMIN_PASS_KEY, pass); document.getElementById('loginCard').style.display='none'; document.getElementById('adminUI').style.display='block'; loadNews(); fetchLogs(); }
-        else if(res.status===403){ alert('Ваш IP заблоковано'); }
-        else alert(res.body && res.body.error ? res.body.error : 'Невдала спроба входу');
+        if(res.status===200){
+          sessionStorage.setItem(ADMIN_PASS_KEY, pass);
+          document.getElementById('loginCard').style.display='none';
+          document.getElementById('adminUI').style.display='block';
+          loadNews(); fetchLogs();
+        } else if(res.status===403){
+          alert('Ваш IP заблоковано');
+        } else {
+          alert(res.body && res.body.error ? res.body.error : 'Невдала спроба входу');
+        }
       }).catch(()=>alert('Помилка з’єднання'));
     }
 
-    function logout(){ sessionStorage.removeItem(ADMIN_PASS_KEY); document.getElementById('adminUI').style.display='none'; document.getElementById('loginCard').style.display='block'; }
+    function logout(){
+      sessionStorage.removeItem(ADMIN_PASS_KEY);
+      document.getElementById('adminUI').style.display='none';
+      document.getElementById('loginCard').style.display='block';
+    }
 
     async function uploadAndAdd(){
       const fileInput = document.getElementById('n_image');
@@ -94,13 +116,11 @@
         const res = await fetch('/api/admin/upload-image', { method:'POST', body: fd });
         const j = await res.json();
         if(res.ok && j.path){
-          // додати новину з отриманим шляхом
           await addNews({ img: j.path });
         } else {
           alert(j.error || 'Завантаження не вдалося');
         }
       } else {
-        // без файлу — просто додати
         await addNews({});
       }
     }
@@ -145,12 +165,17 @@
       const arr = await res.json();
       const container = document.getElementById('newsList');
       container.innerHTML = '';
-      if(!Array.isArray(arr) || arr.length===0){ container.innerHTML = '<div class="placeholder">Новин поки що немає</div>'; return; }
+      if(!Array.isArray(arr) || arr.length===0){
+        container.innerHTML = '<div class="placeholder">Новин поки що немає</div>';
+        return;
+      }
       arr.slice(0,30).forEach(n=>{
         const el = document.createElement('div');
         el.style.borderBottom = '1px solid #eee';
         el.style.padding = '10px 0';
-        el.innerHTML = `<strong>${escapeHtml(n.title)}</strong> <span style="color:#666">[${escapeHtml(n.category||'')}]</span><div style="font-size:13px;color:#444">${escapeHtml(n.content||'')}</div><div style="margin-top:6px"><img src="${escapeHtml(n.img||'/assets/img/auto-news.jpg')}" style="max-width:160px;border-radius:6px"></div>`;
+        el.innerHTML = `<strong>${escapeHtml(n.title)}</strong> <span style="color:#666">[${escapeHtml(n.category||'')}]</span>
+          <div style="font-size:13px;color:#444">${escapeHtml(n.content||'')}</div>
+          <div style="margin-top:6px"><img src="${escapeHtml(n.img||'/assets/img/auto-news.jpg')}" style="max-width:160px;border-radius:6px"></div>`;
         container.appendChild(el);
       });
     }
@@ -166,7 +191,6 @@
       URL.revokeObjectURL(url);
     }
 
-    // при завантаженні сторінки — якщо є pass, автоматично показати UI
     (function init(){
       const pass = sessionStorage.getItem(ADMIN_PASS_KEY);
       if(pass){ document.getElementById('loginCard').style.display='none'; document.getElementById('adminUI').style.display='block'; loadNews(); fetchLogs(); }
