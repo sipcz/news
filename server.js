@@ -29,6 +29,7 @@ const LOG_FILE = path.join(__dirname, "server.log");
 const BLOCKS_FILE = path.join(__dirname, "blocks.json");
 const UPLOADS_DIR = path.join(__dirname, "assets/news");
 
+// Ініціалізація файлів та папок
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 if (!fs.existsSync(NEWS_FILE)) fs.writeFileSync(NEWS_FILE, "[]", "utf-8");
 if (!fs.existsSync(LOG_FILE)) fs.writeFileSync(LOG_FILE, "", "utf-8");
@@ -38,14 +39,33 @@ app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors());
 app.use(express.json());
 
+// --- НАДІЙНИЙ ЗАХИСТ ВІД ЗАВАНТАЖЕННЯ СКРИПТІВ ТА ВІРУСІВ ---
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, UPLOADS_DIR),
   filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname) || ".jpg";
+    let ext = path.extname(file.originalname).toLowerCase();
+    // Якщо файл не картинка - примусово робимо його .jpg
+    if (!['.png', '.jpg', '.jpeg', '.webp', '.gif'].includes(ext)) {
+        ext = '.jpg'; 
+    }
     cb(null, `img_${Date.now()}${Math.floor(Math.random()*1000)}${ext}`);
   }
 });
-const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
+
+const fileFilter = (req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (allowedTypes.includes(file.mimetype)) {
+        cb(null, true);
+    } else {
+        cb(new Error('HACK_ATTEMPT'), false);
+    }
+};
+
+const upload = multer({ 
+    storage: storage, 
+    limits: { fileSize: 5 * 1024 * 1024 }, // Ліміт 5 МБ
+    fileFilter: fileFilter 
+});
 
 // --- УТИЛІТИ ---
 const safeReadJson = (file, fallback = []) => {
@@ -64,6 +84,7 @@ const getClientIp = (req) => {
   return req.socket.remoteAddress || "unknown_ip";
 };
 
+// ЛОГУВАННЯ ТА ТЕЛЕГРАМ
 const writeLog = async (msg, type = "INFO") => {
   const time = new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Berlin' });
   const logStr = `[${time}] [${type}] ${msg}\n`;
@@ -79,6 +100,7 @@ const writeLog = async (msg, type = "INFO") => {
   }
 };
 
+// --- ЕКСТРАКТОР ЗОБРАЖЕНЬ ---
 function extractImage(item) {
   if (item.enclosure && item.enclosure.url) return item.enclosure.url;
   if (item.mediaContent && item.mediaContent.$ && item.mediaContent.$.url) return item.mediaContent.$.url;
@@ -88,6 +110,7 @@ function extractImage(item) {
   return "assets/img/auto-news.jpg";
 }
 
+// --- ГРАБЕР НОВИН ---
 async function autoFetchNews() {
   try {
     let news = safeReadJson(NEWS_FILE, []);
@@ -118,6 +141,7 @@ async function autoFetchNews() {
     const now = Date.now();
     const twoDays = 172800000;
     
+    // Чистка старих фото
     news.filter(n => (now - n.id) >= twoDays).forEach(n => {
         if (n.img && n.img.startsWith('assets/news/')) {
             const fp = path.join(__dirname, n.img);
@@ -141,7 +165,7 @@ app.post("/api/taxi", async (req, res) => {
 
 // --- АДМІНКА: ЛОГІН ТА БАН ---
 app.post('/api/admin/login', async (req, res) => {
-  const ip = getClientIp(req); // Надійне отримання IP
+  const ip = getClientIp(req);
   const now = Date.now();
   const sec = getSecData();
 
@@ -155,7 +179,7 @@ app.post('/api/admin/login', async (req, res) => {
   } else {
     sec.attempts[ip] = (sec.attempts[ip] || 0) + 1;
     if (sec.attempts[ip] >= 3) {
-      sec.blocked[ip] = now + 3600000;
+      sec.blocked[ip] = now + 3600000; // 1 година бану
       await writeLog(`🚨 БАН IP ${ip} (3 спроби)`, "ALERT");
     }
     saveSecData(sec);
@@ -164,6 +188,7 @@ app.post('/api/admin/login', async (req, res) => {
   }
 });
 
+// --- АДМІНКА: ДОДАТИ НОВИНУ ---
 app.post('/api/news/add', upload.single('image'), async (req, res) => {
   try {
     const { pass, title, category, content } = req.body;
@@ -185,6 +210,7 @@ app.post('/api/news/add', upload.single('image'), async (req, res) => {
   } catch (e) { res.status(500).json({ error: 'Помилка' }); }
 });
 
+// --- АДМІНКА: ВИДАЛИТИ НОВИНУ ---
 app.post('/api/news/delete', async (req, res) => {
   if (req.body.pass !== ADMIN_PASSWORD) return res.status(401).json({ error: "Unauthorized" });
   try {
@@ -204,19 +230,29 @@ app.post('/api/news/delete', async (req, res) => {
   } catch (e) { res.status(500).json({ error: "Error" }); }
 });
 
+// --- АДМІНКА: ЧИТАТИ ЛОГИ ---
 app.get('/api/admin/logs', (req, res) => {
   if (req.query.pass !== ADMIN_PASSWORD) return res.status(401).send("No access");
-  try { res.type('text/plain').send(fs.readFileSync(LOG_FILE, "utf-8")); } catch (e) { res.send("Логи порожні"); }
+  try { 
+      // Відправляємо тільки останні 500 рядків, щоб не "завісити" адмінку
+      const raw = fs.readFileSync(LOG_FILE, "utf-8");
+      const lines = raw.split(/\r?\n/).filter(Boolean);
+      res.type('text/plain').send(lines.slice(-500).join('\n')); 
+  } catch (e) { res.send("Логи порожні"); }
 });
 
+// --- СТАТИКА ---
 app.use("/assets", express.static(path.join(__dirname, "assets")));
 app.use(express.static(path.join(__dirname, "public")));
 app.get("*", (req, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
 
+// --- СТАРТ СЕРВЕРА ---
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {
   console.log("LIVE SERVER READY on port", PORT);
   await writeLog(`🚀 СЕРВЕР ПЕРЕЗАПУЩЕНО\nСтатус: Активний`, "SUCCESS");
+  
+  // Антисон для Render
   setInterval(() => {
     const host = process.env.RENDER_EXTERNAL_HOSTNAME;
     if(host) https.get(`https://${host}/`, () => {}).on('error', ()=>{});
