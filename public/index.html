@@ -116,8 +116,6 @@
             margin-top: 10px;
             font-size: 0.85rem;
         }
-        .bus-ukraine { background: #2ecc71; }
-
         .german-box { background: var(--ua-blue); color: white; padding: 15px; border-radius: 12px; text-align: center; }
         
         #floating-sos {
@@ -147,7 +145,6 @@
     <div class="nav-left">
         <div onclick="loadContent()" class="logo"><span class="live">LIVE</span><span class="city">Дрезден</span></div>
         <div class="info-bar">
-            <div class="badge" id="weather">☀️ +..°C</div>
             <div class="badge" id="currency">€ .. ₴</div>
             <div class="badge" id="clock">🇩🇪 00:00:00</div>
             <div class="badge" id="clock-ua">🇺🇦 00:00:00</div>
@@ -188,22 +185,6 @@
                 <a href="https://www.saechsische-schweiz.de/en/region/maps" target="_blank" class="link-item">⛰️ Саксонська Швейцарія (Карта)</a>
                 <a href="https://www.schloesserland-sachsen.de/en/map-view/" target="_blank" class="link-item">🏰 Замки Саксонії (Інтерактив)</a>
                 <a href="https://www.elberadweg.de/en/interactive-map/" target="_blank" class="link-item">🚲 Веломаршрут вздовж Ельби</a>
-            </div>
-
-            <div class="sidebar-section">
-                <h4>🏊 Басейни Дрездена</h4>
-                <a href="https://www.dresdner-baeder.de/hallenbaeder/georg-arnhold-bad/" target="_blank" class="link-item">🌊 Georg-Arnhold-Bad (Центр)</a>
-                <a href="https://www.dresdner-baeder.de/hallenbaeder/nordbad/" target="_blank" class="link-item">🏊 Nordbad (Neustadt)</a>
-                <a href="https://www.dresdner-baeder.de/" target="_blank" class="transport-btn" style="background: #00a3e0;">🕒 Дивитись розклад усіх</a>
-            </div>
-
-            <div class="sidebar-section">
-                <h4>🇩🇪 Вивчаємо німецьку</h4>
-                <div class="german-box">
-                    <h2 id="de-word" style="margin: 0; font-size: 1.4rem;">...</h2>
-                    <p id="ua-word" style="margin: 5px 0; font-weight: bold; color: var(--ua-yellow);"></p>
-                    <small id="de-example" style="display:block; margin-top:10px; font-style: italic; font-size: 0.8rem; opacity: 0.9;"></small>
-                </div>
             </div>
 
             <div class="sidebar-section" style="border: 2px solid var(--ua-blue);">
@@ -248,7 +229,7 @@
             <input type="text" name="userContact" required placeholder="Телефон або Email" style="width:100%; padding:10px; margin-bottom:10px; border-radius:6px; border:1px solid var(--border); background: var(--card-bg); color: var(--text-dark);">
             <textarea name="message" rows="4" required placeholder="Ваше повідомлення..." style="width:100%; padding:10px; margin-bottom:10px; border-radius:6px; border:1px solid var(--border); background: var(--card-bg); color: var(--text-dark);"></textarea>
             <div style="margin-bottom:10px;">Код: <span id="captcha-code" style="font-weight:bold;"></span> <input type="text" name="captcha" style="width:60px; padding: 5px;"></div>
-            <button type="submit" class="btn-contact" style="width:100%; padding:12px;">Надіслати</button>
+            <button type="submit" class="btn-contact" id="submitBtn" style="width:100%; padding:12px;">Надіслати</button>
         </form>
     </div>
 </div>
@@ -264,15 +245,6 @@
         document.getElementById('clock-ua').innerText = '🇺🇦 ' + now.toLocaleTimeString('uk-UA', uaOptions);
     }
     setInterval(updateClock, 1000);
-
-    async function fetchWeather() {
-        const KEY = '42861347098e94589d9016e114030671';
-        try {
-            const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=Dresden&appid=${KEY}&units=metric&lang=uk`);
-            const data = await res.json();
-            document.getElementById('weather').innerHTML = `<img src="https://openweathermap.org/img/wn/${data.weather[0].icon}.png" width="20"> ${Math.round(data.main.temp)}°C`;
-        } catch (e) { document.getElementById('weather').style.display = 'none'; }
-    }
 
     function setGermanWord() {
         const words = [
@@ -335,15 +307,60 @@
             const res = await fetch('/api/news');
             const news = await res.json();
             const filtered = news.filter(n => n.category === cat);
-            
             const titleEl = document.getElementById('feedTitle');
             titleEl.innerText = `Рубрика: ${cat}`;
             titleEl.style.display = 'block';
-            
             renderNews(filtered);
             window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch (e) {}
     }
+
+    // --- ОБРОБКА ФОРМИ ---
+    document.getElementById('contactForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('submitBtn');
+        btn.innerText = "Надсилаю...";
+        btn.disabled = true;
+
+        const fd = new FormData(e.target);
+        const data = Object.fromEntries(fd);
+
+        if (data.captcha.toUpperCase() !== captcha) {
+            alert("Невірний код!");
+            btn.disabled = false;
+            btn.innerText = "Надіслати";
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/taxi', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: data.userName,
+                    phone: data.userContact,
+                    comment: data.message
+                })
+            });
+
+            const result = await res.json();
+
+            if (res.ok) {
+                alert("✅ Повідомлення надіслано успішно!");
+                e.target.reset();
+                toggleModal('contactModal', false);
+            } else if (res.status === 429) {
+                alert("🛑 Забагато спроб! Спробуйте пізніше.");
+            } else {
+                alert("❌ Помилка: " + (result.error || "Не вдалося надіслати."));
+            }
+        } catch (err) {
+            alert("🌐 Помилка з'єднання з сервером.");
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "Надіслати";
+        }
+    };
 
     function toggleTheme() {
         document.body.classList.toggle('dark-mode');
@@ -384,7 +401,7 @@
     }
 
     window.onload = () => {
-        updateClock(); fetchWeather(); fetchCurrency(); loadContent(); setGermanWord(); checkShops();
+        updateClock(); fetchCurrency(); loadContent(); setGermanWord(); checkShops();
     };
 </script>
 </body>
