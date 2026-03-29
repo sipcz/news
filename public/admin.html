@@ -11,13 +11,14 @@
     .card{background:#fff;padding:16px;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,0.06);margin-bottom:16px}
     input,textarea,select{width:100%;padding:10px;margin-top:8px;border:1px solid #e6e9ee;border-radius:8px;box-sizing:border-box}
     .row{display:flex;gap:10px;align-items:center}
-    .btn{background:#111;color:#ffd700;padding:10px 14px;border-radius:8px;border:none;cursor:pointer;font-weight:700}
+    .btn{background:#111;color:#ffd700;padding:10px 14px;border-radius:8px;border:none;cursor:pointer;font-weight:700; text-decoration: none; text-align: center; display: inline-block;}
     .btn.secondary{background:#e9ecef;color:#111}
     .btn-del{background:#ff4d4d;color:white;padding:6px 12px;border-radius:6px;border:none;cursor:pointer;font-weight:bold;margin-top:10px;font-size:13px;}
     label{font-weight:600}
+    
     /* ТЕМНИЙ ТЕРМІНАЛ ДЛЯ ЛОГІВ */
     pre{white-space:pre-wrap;word-break:break-word;background:#0b1220;color:#0f0;padding:12px;border-radius:8px;overflow:auto;height:250px;font-family:monospace;}
-    .topbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+    .topbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px; flex-wrap: wrap;}
     .small{font-size:13px;color:#666}
     .placeholder{background:#f7f7f7;border:1px dashed #ddd;padding:12px;border-radius:8px;color:#666;text-align:center;}
     
@@ -26,6 +27,9 @@
     #hammer { position:fixed; top:50%; left:50%; font-size:80px; z-index:10000; display:none; transform: translate(-50%, -200%); }
     .hammer-hit { display:block!important; animation: hit 0.4s forwards; }
     @keyframes hit { 0%{transform:translate(-50%,-200%) rotate(-45deg);} 100%{transform:translate(-50%,-50%) rotate(0deg);} }
+    
+    .back-link { color: #666; font-size: 14px; text-decoration: none; margin-top: 15px; display: inline-block; transition: 0.2s; }
+    .back-link:hover { color: #111; text-decoration: underline; }
   </style>
 </head>
 <body>
@@ -36,9 +40,10 @@
     <div id="loginCard" class="card" style="max-width: 400px; margin: 80px auto; text-align: center;">
       <h2>Вхід в адмінку</h2>
       <input id="pass" type="password" placeholder="Пароль адміністратора" />
-      <div style="margin-top:10px" class="row">
-        <button class="btn" style="width:100%;" onclick="doLogin()">Увійти</button>
+      <div style="margin-top:15px">
+        <button class="btn" style="width:100%; box-sizing:border-box;" onclick="doLogin()">Увійти</button>
       </div>
+      <a href="/" class="back-link">← Повернутися на сайт</a>
     </div>
 
     <div id="adminUI" style="display:none">
@@ -48,6 +53,7 @@
           <span class="small">— керування новинами</span>
         </div>
         <div style="display:flex;gap:8px;align-items:center">
+          <a href="/" class="btn secondary">На сайт</a>
           <button class="btn secondary" onclick="logout()">Вийти</button>
         </div>
       </div>
@@ -95,7 +101,8 @@
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
             const osc = ctx.createOscillator(); const g = ctx.createGain();
             osc.type='sawtooth'; osc.frequency.setValueAtTime(100, ctx.currentTime);
-            g.gain.setValueAtTime(0.5, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime+0.4);
+            // Приглушив звук удару (було 0.5, стало 0.2), щоб музика Педро звучала голосніше
+            g.gain.setValueAtTime(0.2, ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime+0.4);
             osc.connect(g); g.connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime+0.4);
         } catch(e) {}
     }
@@ -131,10 +138,14 @@
             setTimeout(() => {
                 playHitSound(); drawCracks();
                 document.getElementById('loginCard').innerHTML = `
-                    <h2 style="color:#ff3b30">БЛОК!</h2>
-                    <img src="https://media.tenor.com/79_u2v0vXRAAAAAM/pedro-raccoon.gif" style="width:100%; border-radius:10px;">
-                    <audio src="https://www.myinstants.com/media/sounds/pedro-pedro-pedro-pedro-pe.mp3" autoplay loop></audio>
+                    <h2 style="color:#ff3b30; margin-top:0;">БЛОК!</h2>
+                    <img src="https://media.tenor.com/79_u2v0vXRAAAAAM/pedro-raccoon.gif" style="width:100%; border-radius:10px; margin-bottom: 10px;">
+                    <audio id="pedroAudio" src="https://www.myinstants.com/media/sounds/pedro-pedro-pedro-pedro-pe.mp3" autoplay loop></audio>
+                    <br><a href="/" class="back-link">← Повернутися на сайт</a>
                 `;
+                // Примусово викручуємо гучність музики на 100%
+                const pAudio = document.getElementById('pedroAudio');
+                if (pAudio) pAudio.volume = 1.0;
             }, 400);
           } else {
             alert(data.error || 'Невірний пароль');
@@ -173,7 +184,6 @@
       } catch(e) { alert("Помилка"); }
     }
 
-    // ТЕПЕР ЛОГИ ЧИТАЮТЬСЯ ПРАВИЛЬНО ТА З'ЯВЛЯЮТЬСЯ В ТЕМНОМУ ВІКНІ
     async function fetchLogs(){
       const pass = sessionStorage.getItem(ADMIN_PASS_KEY);
       try {
@@ -182,7 +192,7 @@
               const text = await res.text();
               const el = document.getElementById('logsPre');
               el.textContent = text || "Логи порожні";
-              el.scrollTop = el.scrollHeight; // Скролимо в самий низ
+              el.scrollTop = el.scrollHeight;
           }
       } catch(e) {}
     }
@@ -219,7 +229,7 @@
       } catch(e) {}
     }
 
-    // Автоматичний вхід, якщо вже вводили пароль
+    // Автоматичний вхід
     if(sessionStorage.getItem(ADMIN_PASS_KEY)){
         document.getElementById('loginCard').style.display='none';
         document.getElementById('adminUI').style.display='block';
