@@ -42,11 +42,12 @@
         }
         .btn:hover { background: var(--ua-blue); color: #fff; }
 
-        /* ЛОГИ */
+        /* КОНСОЛЬ ЛОГІВ */
         #logConsole {
             background: #1e1e1e; color: #00ff00; padding: 15px; border-radius: 8px;
             font-family: 'Courier New', monospace; font-size: 12px;
-            height: 200px; overflow-y: scroll; white-space: pre-wrap; margin-top: 10px;
+            height: 250px; overflow-y: scroll; white-space: pre-wrap; margin-top: 10px;
+            text-align: left; border: 1px solid #333;
         }
 
         .news-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
@@ -63,22 +64,24 @@
     <nav>
         <div class="logo-text"><span>ADMIN</span> LIVE ДРЕЗДЕН</div>
         <div class="nav-actions">
-            <a href="/" style="text-decoration:none; font-size:13px; color:var(--ua-blue); font-weight:bold;">На головну</a>
+            <a href="/" style="text-decoration:none; font-size:13px; color:var(--ua-blue); font-weight:bold; border: 1px solid; padding: 5px 10px; border-radius: 5px;">На головну</a>
         </div>
     </nav>
 
     <div class="container">
         <div id="loginBox" class="card">
-            <h2>Доступ до панелі</h2>
-            <input type="password" id="adminPass" placeholder="Введіть пароль">
-            <button class="btn" onclick="login()">Увійти</button>
+            <div id="loginFormArea">
+                <h2>Доступ до панелі</h2>
+                <input type="password" id="adminPass" placeholder="Введіть пароль">
+                <button class="btn" onclick="login()">Увійти</button>
+            </div>
         </div>
 
         <div id="adminPanel">
             <div class="card" style="border-left: 5px solid #ff4d4d;">
                 <h3>🛡️ Журнал безпеки (Логи)</h3>
-                <div id="logConsole">Завантаження логів...</div>
-                <button class="btn" style="margin-top:10px; background:#444; font-size:12px; padding:8px;" onclick="fetchLogs()">Оновити логи</button>
+                <div id="logConsole">Завантаження...</div>
+                <button class="btn" style="margin-top:10px; background:#444; font-size:12px; padding:8px; width: auto;" onclick="fetchLogs()">Оновити журнал</button>
             </div>
 
             <div class="card">
@@ -89,13 +92,14 @@
                     <option value="Україна">Україна</option>
                     <option value="Еміграція">Еміграція</option>
                     <option value="Події">Події</option>
+                    <option value="ZAXID.NET">ZAXID.NET</option>
                 </select>
                 <input type="file" id="newsImageInput" accept="image/*">
                 <textarea id="newsContent" placeholder="Текст новини..."></textarea>
                 <button class="btn" onclick="addNews()">Опублікувати</button>
             </div>
 
-            <h3>Архів новин</h3>
+            <h3>Архів ваших новин</h3>
             <div class="news-grid" id="adminNewsList"></div>
         </div>
     </div>
@@ -104,7 +108,10 @@
         let CURRENT_PASS = "";
 
         async function login() {
-            const pass = document.getElementById("adminPass").value;
+            const passInput = document.getElementById("adminPass");
+            const pass = passInput.value;
+            const loginBox = document.getElementById("loginBox");
+
             try {
                 const res = await fetch('/api/admin/login', {
                     method: 'POST',
@@ -112,27 +119,38 @@
                     body: JSON.stringify({ pass })
                 });
 
+                const data = await res.json();
+
                 if (res.ok) {
                     CURRENT_PASS = pass;
-                    document.getElementById("loginBox").style.display = "none";
+                    loginBox.style.display = "none";
                     document.getElementById("adminPanel").style.display = "block";
                     fetchLogs();
                     renderNews();
+                } else if (data.showPedro) {
+                    // Танцюючий єнот при блокуванні
+                    loginBox.innerHTML = `
+                        <div style="text-align:center; padding: 20px;">
+                            <h2 style="color:#ff3b30;">IP ЗАБЛОКОВАНО!</h2>
+                            <p>Забагато спроб. Відпочинь годину з Педро...</p>
+                            <img src="https://media.tenor.com/79_u2v0vXRAAAAAM/pedro-raccoon.gif" style="width:100%; border-radius:15px; margin: 15px 0;">
+                            <audio src="https://www.myinstants.com/media/sounds/pedro-pedro-pedro-pedro-pe.mp3" autoplay loop></audio>
+                        </div>`;
                 } else {
-                    const data = await res.json();
-                    alert(data.error || "Помилка входу");
+                    alert(data.error || "Невірний пароль!");
+                    passInput.value = "";
                 }
             } catch (e) { alert("Сервер недоступний"); }
         }
 
         async function fetchLogs() {
             try {
-                // Шлемо пароль як query параметр для безпеки доступу до файлу
                 const res = await fetch(`/api/admin/logs?pass=${CURRENT_PASS}`);
+                if (!res.ok) return;
                 const text = await res.text();
                 const consoleEl = document.getElementById("logConsole");
                 consoleEl.innerText = text;
-                consoleEl.scrollTop = consoleEl.scrollHeight; // Скрол вниз
+                consoleEl.scrollTop = consoleEl.scrollHeight;
             } catch (e) { console.log("Помилка логів"); }
         }
 
@@ -152,13 +170,12 @@
             if (imageFile) formData.append("image", imageFile);
 
             try {
-                // Використовуємо твій роут для додавання
                 const res = await fetch('/api/news/add', { method: 'POST', body: formData });
                 if (res.ok) { 
-                    alert("Опубліковано!"); 
+                    alert("✅ Опубліковано успішно!"); 
                     location.reload(); 
                 } else {
-                    alert("Помилка збереження. Перевірте консоль сервера.");
+                    alert("❌ Помилка збереження.");
                 }
             } catch (err) { alert("Помилка з'єднання"); }
         }
@@ -167,17 +184,18 @@
             const list = document.getElementById("adminNewsList");
             const res = await fetch('/api/news');
             const news = await res.json();
+            // Показуємо тільки ті новини, які можна видалити (ті, що мають ID)
             list.innerHTML = news.map(n => `
                 <div class="news-item">
                     <img src="${n.img || 'assets/img/auto-news.jpg'}" alt="img">
-                    <h4 style="font-size:12px;">${n.title}</h4>
+                    <h4 style="font-size:11px; height: 30px; overflow: hidden;">${n.title}</h4>
                     <button class="del-btn" onclick="deleteNews('${n.id}')">Видалити</button>
                 </div>
             `).join('');
         }
 
         async function deleteNews(id) {
-            if (!confirm("Видалити статтю?")) return;
+            if (!confirm("Видалити цю новину назавжди?")) return;
             try {
                 const res = await fetch('/api/news/delete', {
                     method: 'POST',
@@ -185,7 +203,8 @@
                     body: JSON.stringify({ pass: CURRENT_PASS, id: id })
                 });
                 if (res.ok) renderNews();
-            } catch (e) { alert("Помилка видалення"); }
+                else alert("Помилка при видаленні");
+            } catch (e) { alert("Помилка з'єднання"); }
         }
     </script>
 </body>
