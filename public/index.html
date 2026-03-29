@@ -16,26 +16,11 @@
             --border: #334155; --de-black: #f8fafc;
         }
 
-        /* 🟢 ОПТИМІЗАЦІЯ 1: Прибрали transition для ВСІХ елементів (*) */
         * { box-sizing: border-box; }
-        
-        /* Анімацію кольорів залишили тільки там, де вона реально потрібна */
-        body, nav, .news-card, .sidebar-section, .modal-content, input, textarea {
-            transition: background 0.3s, color 0.3s, border-color 0.3s;
-        }
+        body, nav, .news-card, .sidebar-section, .modal-content, input, textarea { transition: background 0.3s, color 0.3s, border-color 0.3s; }
+        body { margin: 0; background: var(--soft-bg); color: var(--text-dark); font-family: 'Segoe UI', Roboto, sans-serif; line-height: 1.5; }
 
-        body {
-            margin: 0; background: var(--soft-bg); color: var(--text-dark);
-            font-family: 'Segoe UI', Roboto, sans-serif; line-height: 1.5;
-        }
-
-        nav {
-            background: var(--card-bg); border-top: 4px solid var(--ua-blue);
-            border-bottom: 3px solid var(--ua-yellow); padding: 10px 5%;
-            display: flex; justify-content: space-between; align-items: center;
-            position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
+        nav { background: var(--card-bg); border-top: 4px solid var(--ua-blue); border-bottom: 3px solid var(--ua-yellow); padding: 10px 5%; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         .nav-left { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
         .logo { font-size: 1.4rem; font-weight: 900; text-decoration: none; display: flex; align-items: center; cursor: pointer; }
         .logo .live { color: var(--ua-blue); text-transform: uppercase; }
@@ -55,11 +40,7 @@
         @media (max-width: 900px) { .news-grid { grid-template-columns: 1fr; } .info-bar { display: none; } }
 
         .main-feed { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
-
-        .news-card {
-            background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border);
-            overflow: hidden; display: flex; flex-direction: column; cursor: pointer;
-        }
+        .news-card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; display: flex; flex-direction: column; cursor: pointer; }
         .news-card:hover { border-color: var(--ua-blue); transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
         
         .img-ratio { width: 100%; height: 160px; background: #e2e8f0; position: relative; overflow: hidden; }
@@ -72,33 +53,19 @@
 
         .sidebar-section { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); padding: 15px; margin-bottom: 20px; }
         .sidebar-section h4 { margin-top: 0; border-bottom: 2px solid var(--ua-yellow); display: inline-block; margin-bottom: 15px; color: var(--ua-blue); }
-        
         .emergency-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-weight: bold; }
         .emergency-item span { color: #ef4444; }
 
         .link-item { display: block; padding: 8px 0; color: var(--text-dark); text-decoration: none; font-size: 0.9rem; border-bottom: 1px solid var(--border); cursor: pointer; }
         .link-item:hover { color: var(--ua-blue); padding-left: 5px; }
-
         .transport-btn { display: block; background: var(--ua-blue); color: white; text-align: center; padding: 10px; border-radius: 8px; text-decoration: none; font-weight: bold; margin-top: 10px; font-size: 0.85rem; }
         
-        #floating-sos {
-            position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px;
-            background: #ef4444; color: white; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 24px; cursor: pointer; z-index: 999;
-            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
-            animation: pulse-red 2s infinite;
-        }
-        @keyframes pulse-red {
-            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-            70% { transform: scale(1.1); box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
-            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-        }
+        #floating-sos { position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px; background: #ef4444; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; z-index: 999; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4); animation: pulse-red 2s infinite; }
+        @keyframes pulse-red { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { transform: scale(1.1); box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
 
         .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; backdrop-filter:blur(5px); padding:15px; }
         .modal-content { background:var(--card-bg); max-width:600px; margin:30px auto; border-radius:15px; padding:25px; position:relative; overflow-y: auto; max-height: 85vh; }
         .close-btn { position:absolute; right:20px; top:15px; font-size:24px; cursor:pointer; }
-
         footer { text-align: center; padding: 40px; color: #888; border-top: 1px solid var(--border); }
     </style>
 </head>
@@ -129,17 +96,15 @@
         <aside>
             <div class="sidebar-section">
                 <h4>📘 Довідник емігранта</h4>
-                <div class="link-item" onclick="filterByCategory('Еміграція')">🛡️ Параграф 24: Деталі</div>
-                <div class="link-item" onclick="filterByCategory('Еміграція')">🏠 Пошук житла (Wohnung)</div>
-                <div class="link-item" onclick="filterByCategory('Еміграція')">💼 Робота та Jobcenter</div>
-                <div class="link-item" onclick="filterByCategory('Еміграція')">🏥 Страхування</div>
+                <div class="link-item" onclick="openGuide('p24')">🛡️ Параграф 24: Деталі</div>
+                <div class="link-item" onclick="openGuide('house')">🏠 Пошук житла (Wohnung)</div>
+                <div class="link-item" onclick="openGuide('job')">💼 Робота та Jobcenter</div>
+                <div class="link-item" onclick="openGuide('med')">🏥 Страхування</div>
             </div>
 
             <div class="sidebar-section">
                 <h4>🛒 Магазини сьогодні</h4>
-                <div id="status-content" style="padding: 10px; border-radius: 8px; font-weight: bold; text-align: center; font-size: 0.9rem;">
-                    Завантаження...
-                </div>
+                <div id="status-content" style="padding: 10px; border-radius: 8px; font-weight: bold; text-align: center; font-size: 0.9rem;">Завантаження...</div>
             </div>
 
             <div class="sidebar-section">
@@ -181,6 +146,14 @@
     </div>
 </div>
 
+<div id="guideModal" class="modal" onclick="closeByOutside(event)">
+    <div class="modal-content">
+        <span class="close-btn" onclick="toggleModal('guideModal', false)">&times;</span>
+        <h2 id="guideTitle" style="color: var(--ua-blue); margin-top: 0;"></h2>
+        <div id="guideText" style="white-space: pre-wrap; line-height: 1.6; margin-top: 15px;"></div>
+    </div>
+</div>
+
 <div id="contactModal" class="modal" onclick="closeByOutside(event)">
     <div class="modal-content" style="max-width: 450px;">
         <span class="close-btn" onclick="toggleModal('contactModal', false)">&times;</span>
@@ -200,6 +173,7 @@
 <script>
     let allNews = [];
     let captcha = "";
+    let guideData = {}; // База довідника
 
     function updateClock() {
         const now = new Date();
@@ -209,9 +183,7 @@
     setInterval(updateClock, 1000);
 
     function checkShops() {
-        const now = new Date();
-        const day = now.getDay();
-        const hour = now.getHours();
+        const now = new Date(); const day = now.getDay(); const hour = now.getHours();
         const el = document.getElementById('status-content');
         if (day === 0) { el.innerText = "🔴 ЗАЧИНЕНО (Неділя)"; el.style.background = "#fee2e2"; el.style.color = "#ef4444"; }
         else if (hour >= 20 || hour < 7) { el.innerText = "🟠 ЗАЧИНЕНО (Ніч)"; el.style.background = "#fff7ed"; el.style.color = "#ea580c"; }
@@ -222,33 +194,28 @@
         try {
             const res = await fetch('/api/news');
             allNews = await res.json();
-            
-            // 🟢 ОПТИМІЗАЦІЯ 3: Виводимо тільки 30 новин, щоб не зависав комп'ютер
             renderNews(allNews.slice(0, 30));
             
             const urgent = document.getElementById('urgentFeed');
             urgent.innerHTML = allNews.slice(0, 5).map((n) => {
                 const origIndex = allNews.indexOf(n);
-                return `
-                <div class="link-item" onclick="openNewsByIndex(${origIndex})">
-                    <div style="font-size:0.85rem; font-weight:500;">${n.title}</div>
-                </div>
-            `}).join('');
+                return `<div class="link-item" onclick="openNewsByIndex(${origIndex})"><div style="font-size:0.85rem; font-weight:500;">${n.title}</div></div>`
+            }).join('');
         } catch (e) { document.getElementById('newsGrid').innerHTML = "Помилка завантаження новин."; }
+
+        // Завантажуємо довідник з сервера
+        try {
+            const gRes = await fetch('/api/guide');
+            guideData = await gRes.json();
+        } catch(e) {}
     }
 
     function renderNews(newsToRender) {
         const grid = document.getElementById('newsGrid');
-        if (!newsToRender || newsToRender.length === 0) {
-            grid.innerHTML = "<p style='grid-column: 1/-1;'>Новин у цій категорії поки немає.</p>";
-            return;
-        }
-
+        if (!newsToRender || newsToRender.length === 0) { grid.innerHTML = "<p style='grid-column: 1/-1;'>Новин у цій категорії поки немає.</p>"; return; }
         grid.innerHTML = newsToRender.map((n) => {
-            // Виправляємо баг з відкриттям неправильної новини після фільтрації
             const origIndex = allNews.indexOf(n);
             const hasPhoto = n.img && n.img !== "assets/img/auto-news.jpg";
-            
             return `
                 <div class="news-card" onclick="openNewsByIndex(${origIndex})">
                     <div class="img-ratio">
@@ -259,76 +226,55 @@
                         <h3>${n.title}</h3>
                         <div style="font-size:0.7rem; color:#888;">${n.date}</div>
                     </div>
-                </div>
-            `;
+                </div>`;
         }).join('');
     }
 
     function openNewsByIndex(index) {
-        const n = allNews[index];
-        if(!n) return;
+        const n = allNews[index]; if(!n) return;
         const img = document.getElementById('mImg');
-        if (n.img && n.img !== "assets/img/auto-news.jpg") { img.src = n.img; img.style.display = 'block'; }
-        else { img.style.display = 'none'; }
-        document.getElementById('mTitle').innerText = n.title;
-        document.getElementById('mDate').innerText = n.date;
-        document.getElementById('mText').innerText = n.content;
+        if (n.img && n.img !== "assets/img/auto-news.jpg") { img.src = n.img; img.style.display = 'block'; } else { img.style.display = 'none'; }
+        document.getElementById('mTitle').innerText = n.title; document.getElementById('mDate').innerText = n.date; document.getElementById('mText').innerText = n.content;
         toggleModal('newsModal', true);
     }
 
+    // НОВЕ: Функція відкриття довідника
+    function openGuide(key) {
+        if(guideData[key]) {
+            document.getElementById('guideTitle').innerText = guideData[key].title;
+            document.getElementById('guideText').innerText = guideData[key].text;
+            toggleModal('guideModal', true);
+        }
+    }
+
     async function filterByCategory(cat) {
-        // Також обмежуємо до 30 новин у категорії
         const filtered = allNews.filter(n => n.category === cat).slice(0, 30);
         const titleEl = document.getElementById('feedTitle');
         titleEl.innerHTML = `Рубрика: ${cat} <button onclick="window.location.reload()" style="margin-left:10px; padding:3px 8px; font-size:12px; cursor:pointer;">Скинути</button>`;
-        titleEl.style.display = 'block';
-        renderNews(filtered);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        titleEl.style.display = 'block'; renderNews(filtered); window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    function toggleTheme() {
-        document.body.classList.toggle('dark-mode');
-        localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
-    }
-
-    async function fetchCurrency() {
-        try {
-            const res = await fetch('https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?valcode=EUR&json');
-            const data = await res.json();
-            document.getElementById('currency').innerHTML = `€ <b>${data[0].rate.toFixed(2)} ₴</b>`;
-        } catch (e) {}
-    }
+    function toggleTheme() { document.body.classList.toggle('dark-mode'); localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light'); }
+    async function fetchCurrency() { try { const res = await fetch('https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?valcode=EUR&json'); const data = await res.json(); document.getElementById('currency').innerHTML = `€ <b>${data[0].rate.toFixed(2)} ₴</b>`; } catch (e) {} }
 
     function toggleModal(id, show) {
         document.getElementById(id).style.display = show ? 'block' : 'none';
         if(id === 'contactModal' && show) genCaptcha();
     }
-
-    function genCaptcha() {
-        captcha = Math.random().toString(36).substring(2, 6).toUpperCase();
-        document.getElementById('captcha-code').innerText = captcha;
-    }
+    function genCaptcha() { captcha = Math.random().toString(36).substring(2, 6).toUpperCase(); document.getElementById('captcha-code').innerText = captcha; }
 
     document.getElementById('contactForm').onsubmit = async (e) => {
-        e.preventDefault();
-        const btn = document.getElementById('submitBtn');
-        const fd = new FormData(e.target);
-        const data = Object.fromEntries(fd);
+        e.preventDefault(); const btn = document.getElementById('submitBtn'); const fd = new FormData(e.target); const data = Object.fromEntries(fd);
         if (data.captcha.toUpperCase() !== captcha) { alert("Невірний код!"); return; }
-        
         btn.innerText = "Надсилаю..."; btn.disabled = true;
         try {
-            const res = await fetch('/api/taxi', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: data.userName, phone: data.userContact, comment: data.message })
-            });
+            const res = await fetch('/api/taxi', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: data.userName, phone: data.userContact, comment: data.message }) });
             if (res.ok) { alert("✅ Надіслано!"); e.target.reset(); toggleModal('contactModal', false); }
         } catch (err) { alert("Помилка"); }
         btn.innerText = "Надіслати"; btn.disabled = false;
     };
 
-    function closeByOutside(e) { if (e.target.classList.contains('modal')) { toggleModal('newsModal', false); toggleModal('contactModal', false); } }
+    function closeByOutside(e) { if (e.target.classList.contains('modal')) { toggleModal('newsModal', false); toggleModal('contactModal', false); toggleModal('guideModal', false); } }
 
     window.onload = () => {
         if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
