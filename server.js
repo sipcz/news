@@ -42,7 +42,7 @@ const defaultGuide = {
   med: { title: "🏥 Страхування", text: "Як обрати медичну касу..." }
 };
 
-// --- ІНІЦІАЛІЗАЦІЯ ФАЙЛІВ ---
+// --- ІНІЦІАЛІЗАЦІЯ ---
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 if (!fs.existsSync(NEWS_FILE)) fs.writeFileSync(NEWS_FILE, "[]", "utf-8");
 if (!fs.existsSync(LOG_FILE)) fs.writeFileSync(LOG_FILE, "", "utf-8");
@@ -52,6 +52,58 @@ if (!fs.existsSync(GUIDE_FILE)) fs.writeFileSync(GUIDE_FILE, JSON.stringify(defa
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors());
 app.use(express.json());
+
+// --- РОЗУМНЕ ЛОГУВАННЯ (АНТИ-СПАМ) ---
+let lastErrorTime = 0;
+let lastErrorMessage = "";
+const origError = console.error;
+
+const writeLog = async (msg, type = "INFO") => {
+  const time = new Date().toLocaleString("uk-UA", { timeZone: "Europe/Berlin" });
+  const logStr = `[${time}] [${type}] ${msg}\n`;
+  
+  // Виводимо в консоль Render
+  console.log(logStr.trim());
+  
+  // Асинхронний запис у файл (щоб не гальмувати сервер)
+  fs.appendFile(LOG_FILE, logStr, (err) => {
+    if (err) origError("CRITICAL: File log failed", err);
+  });
+
+  // Надсилаємо в Телеграм тільки важливе
+  if (["ALERT", "SUCCESS", "MSG", "ERROR"].includes(type)) {
+    const now = Date.now();
+    // Якщо помилка та сама і пройшло менше 5 хвилин - ігноруємо (захист від флуду)
+    if (type === "ERROR" && msg === lastErrorMessage && (now - lastErrorTime) < 300000) return;
+    
+    if (type === "ERROR") {
+      lastErrorTime = now;
+      lastErrorMessage = msg;
+    }
+
+    axios.post(
+      `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,
+      { chat_id: CHAT_ID, text: `<b>ПОРТАЛ LIVE [${type}]:</b>\n${msg.substring(0, 3500)}`, parse_mode: "HTML" },
+      { timeout: 5000 }
+    ).catch(() => {});
+  }
+};
+
+// Перехоплення всіх консольних помилок (правильна обробка Error Objects)
+console.error = (...args) => {
+  const processedArgs = args.map(arg => {
+    if (arg instanceof Error) return `${arg.message}\n${arg.stack}`;
+    if (typeof arg === "object") return JSON.stringify(arg, null, 2);
+    return String(arg);
+  });
+  const finalMsg = processedArgs.join(" ");
+  writeLog(finalMsg, "ERROR");
+  origError(...args);
+};
+
+// Глобальні падіння Node.js
+process.on("uncaughtException", (err) => console.error("UNCAUGHT EXCEPTION:", err));
+process.on("unhandledRejection", (reason) => console.error("UNHANDLED REJECTION:", reason));
 
 // --- MULTER ---
 const storage = multer.diskStorage({
@@ -68,38 +120,6 @@ const safeRead = (f, fb) => { try { return JSON.parse(fs.readFileSync(f, "utf-8"
 const safeWrite = (f, d) => fs.writeFileSync(f, JSON.stringify(d, null, 2), "utf-8");
 const getIP = (req) => req.headers["x-forwarded-for"]?.split(",")[0].trim() || req.socket.remoteAddress;
 
-// --- ГЛОБАЛЬНИЙ ЛОГЕР ---
-const writeLog = async (msg, type = "INFO") => {
-  const time = new Date().toLocaleString("uk-UA", { timeZone: "Europe/Berlin" });
-  const logStr = `[${time}] [${type}] ${msg}\n`;
-  console.log(logStr.trim());
-  fs.appendFileSync(LOG_FILE, logStr);
-
-  if (["ALERT", "SUCCESS", "MSG", "ERROR"].includes(type)) {
-    axios.post(
-      `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,
-      { chat_id: CHAT_ID, text: `<b>ПОРТАЛ LIVE:</b>\n${msg}`, parse_mode: "HTML" },
-      { timeout: 5000 }
-    ).catch(() => {});
-  }
-};
-
-// --- ПЕРЕХОПЛЕННЯ ВСІХ ПОМИЛОК NODE ---
-process.on("uncaughtException", (err) => {
-  writeLog(`❌ Uncaught Exception: ${err.stack || err}`, "ERROR");
-});
-
-process.on("unhandledRejection", (reason) => {
-  writeLog(`⚠️ Unhandled Rejection: ${reason}`, "ERROR");
-});
-
-// --- ПЕРЕХОПЛЕННЯ ВСІХ console.error ---
-const origError = console.error;
-console.error = (...args) => {
-  writeLog(`🛑 Console Error: ${args.join(" ")}`, "ERROR");
-  origError(...args);
-};
-
 // --- ГРАБЕР НОВИН ---
 async function fetchNews() {
   const sources = [
@@ -114,7 +134,7 @@ async function fetchNews() {
     try {
       const res = await axios.get(s.u, {
         timeout: 15000,
-        headers: { "User-Agent": "Mozilla/5.0" }
+        headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0" }
       });
 
       const feed = await parser.parseString(res.data);
@@ -124,8 +144,7 @@ async function fetchNews() {
         if (!title || news.some(n => n.title === title)) return;
 
         let content = (item.contentEncoded || item.contentSnippet || item.content || "")
-          .replace(/<[^>]*>?/gm, " ")
-          .trim();
+          .replace(/<[^>]*>?/gm, " ").trim();
 
         let image = item.enclosure?.url || item.mediaContent?.$.url;
         if (!image && item.content) {
@@ -143,9 +162,8 @@ async function fetchNews() {
           content: content.substring(0, 2000)
         });
       });
-
     } catch (e) {
-      console.error(`Помилка ${s.n}: ${e.message}`);
+      console.error(`Помилка грабера ${s.n}: ${e.message}`);
     }
   }
 
@@ -156,17 +174,13 @@ async function fetchNews() {
 setInterval(fetchNews, 20 * 60 * 1000);
 fetchNews();
 
-// --- API ---
+// --- API МАРШРУТИ ---
 app.get("/api/news", (req, res) => {
   const news = safeRead(NEWS_FILE, []).map(n => ({
     ...n,
     displayDate: new Date(n.date).toLocaleString("uk-UA", {
       timeZone: "Europe/Berlin",
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit"
+      day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit"
     })
   }));
   res.json(news);
@@ -176,12 +190,10 @@ app.get("/api/guide", (req, res) => res.json(safeRead(GUIDE_FILE, defaultGuide))
 
 app.post("/api/taxi", async (req, res) => {
   const { fax, userName, userContact, message } = req.body;
-
   if (fax) {
     await writeLog(`🛡️ БОТ ЗАБЛОКОВАНИЙ (Honeypot). IP: ${getIP(req)}`, "WARN");
     return res.json({ success: true });
   }
-
   await writeLog(`📩 НОВЕ ПОВІДОМЛЕННЯ:\n👤 ${userName}\n📞 ${userContact}\n💬 ${message}`, "MSG");
   res.json({ success: true });
 });
@@ -201,12 +213,10 @@ app.post("/api/admin/login", async (req, res) => {
   }
 
   sec.attempts[ip] = (sec.attempts[ip] || 0) + 1;
-
   if (sec.attempts[ip] >= 3) {
     sec.blocked[ip] = Date.now() + 3600000;
-    await writeLog(`🚨 БЛОКУВАННЯ IP ${ip}`, "ALERT");
+    await writeLog(`🚨 БЛОКУВАННЯ IP ${ip} на 1 годину`, "ALERT");
   }
-
   safeWrite(BLOCKS_FILE, sec);
   res.status(401).json({ error: "Невірний пароль" });
 });
@@ -220,9 +230,7 @@ app.post("/api/guide/update", (req, res) => {
 
 app.post("/api/news/add", upload.single("image"), (req, res) => {
   if (req.body.pass !== ADMIN_PASSWORD) return res.status(401).send();
-
   const news = safeRead(NEWS_FILE, []);
-
   news.unshift({
     id: Date.now(),
     date: new Date().toISOString(),
@@ -231,7 +239,6 @@ app.post("/api/news/add", upload.single("image"), (req, res) => {
     content: req.body.content.substring(0, 2000),
     img: req.file ? `assets/news/${req.file.filename}` : "assets/img/auto-news.jpg"
   });
-
   safeWrite(NEWS_FILE, news.slice(0, 150));
   res.json({ success: true });
 });
@@ -245,16 +252,16 @@ app.get("/api/admin/logs", (req, res) => {
   }
 });
 
-// --- STATIC ---
+// --- СТАТИКА ---
 app.use("/assets", express.static(path.join(__dirname, "assets")));
 app.use(express.static(path.join(__dirname, "public")));
 app.get("*", (req, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
 
-// --- START ---
+// --- ЗАПУСК ---
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server on port ${PORT}`);
-
+  // Анти-сон для Render
   setInterval(() => {
     const host = process.env.RENDER_EXTERNAL_HOSTNAME;
     if (host) https.get(`https://${host}/`).on("error", () => {});
