@@ -288,6 +288,30 @@ app.post("/api/news/add", upload.single("image"), (req, res) => {
   res.json({ success: true });
 });
 
+// --- ВИДАЛЕННЯ НОВИНИ ---
+app.post("/api/news/delete", (req, res) => {
+  if (req.body.pass !== ADMIN_PASSWORD) return res.status(401).send();
+
+  const { id } = req.body;
+  if (!id) return res.status(400).json({ error: "ID не вказано" });
+
+  let news = safeRead(NEWS_FILE, []);
+  const item = news.find(n => n.id == id);
+  if (!item) return res.status(404).json({ error: "Новину не знайдено" });
+
+  if (item.img && item.img.startsWith("assets/news/")) {
+    const imgPath = path.join(__dirname, item.img);
+    fs.unlink(imgPath, () => {});
+  }
+
+  news = news.filter(n => n.id != id);
+  safeWrite(NEWS_FILE, news);
+
+  writeLog(`🗑️ Видалено новину: ${item.title}`, "SUCCESS");
+
+  res.json({ success: true });
+});
+
 app.get("/api/admin/logs", (req, res) => {
   if (req.query.pass !== ADMIN_PASSWORD) return res.status(401).send();
   fs.readFile(LOG_FILE, "utf-8", (err, data) => {
