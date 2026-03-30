@@ -19,7 +19,7 @@ const parser = new Parser({
   }
 });
 
-// --- КОНФІГУРАЦІЯ (Все прописано прямо тут) ---
+// --- КОНФІГУРАЦІЯ ---
 const BOT_TOKEN = "8381037035:AAGhfS8LbZQCgPf_oAVyvG9tXDLtfAxGVug";
 const CHAT_ID = "8257665442";
 const ADMIN_PASSWORD = "pedro2026";
@@ -65,7 +65,6 @@ const writeLog = async (msg, type = "INFO") => {
   const logStr = `[${time}] [${type}] ${msg}\n`;
   console.log(logStr.trim());
   fs.appendFileSync(LOG_FILE, logStr);
-  
   if (["ALERT", "SUCCESS", "MSG"].includes(type)) {
     axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, { 
         chat_id: CHAT_ID, text: `<b>ПОРТАЛ LIVE:</b>\n${msg}`, parse_mode: "HTML" 
@@ -73,41 +72,51 @@ const writeLog = async (msg, type = "INFO") => {
   }
 };
 
+// --- ГРАБЕР НОВИН (Виправлено для ТСН) ---
 async function fetchNews() {
   const sources = [
-    { n: "ТСН Україна", u: "https://tsn.ua/rss/full.rss" },
+    { n: "ТСН Україна", u: "https://tsn.ua/rss/full.rss" }, 
     { n: "MDR Саксонія", u: "https://www.mdr.de/nachrichten/sachsen/index-rss.xml" },
     { n: "DW Новини", u: "https://rss.dw.com/xml/rss-ukr-all" }
   ];
   let news = safeRead(NEWS_FILE, []);
   for (const s of sources) {
     try {
-      const res = await axios.get(s.u, { timeout: 10000 });
+      const res = await axios.get(s.u, { 
+        timeout: 15000, 
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' } 
+      });
       const feed = await parser.parseString(res.data);
       feed.items.forEach(item => {
-        if (!item.title || news.some(n => n.title === item.title)) return;
-        let content = (item.contentEncoded || item.contentSnippet || "").replace(/<[^>]*>?/gm, ' ').trim();
+        const title = (item.title || "").trim();
+        if (!title || news.some(n => n.title === title)) return;
+        let content = (item.contentEncoded || item.contentSnippet || item.content || "").replace(/<[^>]*>?/gm, ' ').trim();
+        let image = item.enclosure?.url || item.mediaContent?.$.url;
+        if (!image && item.content) { 
+            const m = item.content.match(/src="([^"]+)"/); 
+            if (m) image = m[1]; 
+        }
         news.push({
           id: Date.now() + Math.random(),
           date: new Date(item.pubDate || Date.now()).toISOString(), 
-          title: item.title, category: s.n, link: item.link, 
-          img: item.enclosure?.url || "assets/img/auto-news.jpg",
+          title: title, category: s.n, link: item.link, 
+          img: image || "assets/img/auto-news.jpg",
           content: content.substring(0, 2000)
         });
       });
-    } catch (e) {}
+    } catch (e) { console.error(`Помилка ${s.n}:`, e.message); }
   }
-  // Сортування: нові зверху
-  news = news.sort((a, b) => new Date(b.date) - new Date(a.date)).reverse().slice(0, 150);
-  safeWrite(NEWS_FILE, news);
+  news.sort((a, b) => new Date(b.date) - new Date(a.date));
+  safeWrite(NEWS_FILE, news.slice(0, 150));
 }
 setInterval(fetchNews, 20 * 60 * 1000);
 fetchNews();
 
+// --- API ---
 app.get("/api/news", (req, res) => {
     const news = safeRead(NEWS_FILE, []).map(n => ({
         ...n,
-        displayDate: new Date(n.date).toLocaleString('uk-UA', { timeZone: 'Europe/Berlin' })
+        displayDate: new Date(n.date).toLocaleString('uk-UA', { timeZone: 'Europe/Berlin', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
     }));
     res.json(news);
 });
@@ -120,7 +129,7 @@ app.post("/api/taxi", async (req, res) => {
     await writeLog(`🛡️ БОТ ЗАБЛОКОВАНИЙ (Honeypot). IP: ${getIP(req)}`, "WARN");
     return res.json({ success: true });
   }
-  await writeLog(`📩 ПОВІДОМЛЕННЯ:\n👤 ${userName}\n📞 ${userContact}\n💬 ${message}`, "MSG");
+  await writeLog(`📩 НОВЕ ПОВІДОМЛЕННЯ:\n👤 ${userName}\n📞 ${userContact}\n💬 ${message}`, "MSG");
   res.json({ success: true });
 });
 
@@ -128,7 +137,6 @@ app.post("/api/admin/login", async (req, res) => {
   const ip = getIP(req);
   const sec = safeRead(BLOCKS_FILE, { attempts: {}, blocked: {} });
   if (sec.blocked[ip] && Date.now() < sec.blocked[ip]) return res.status(403).json({ error: "Ви заблоковані" });
-  
   if (req.body.pass === ADMIN_PASSWORD) {
     sec.attempts[ip] = 0; safeWrite(BLOCKS_FILE, sec);
     await writeLog(`🔓 Вхід в адмінку. IP: ${ip}`, "SUCCESS");
@@ -155,8 +163,7 @@ app.post("/api/news/add", upload.single("image"), (req, res) => {
     if (req.body.pass !== ADMIN_PASSWORD) return res.status(401).send();
     const news = safeRead(NEWS_FILE, []);
     news.unshift({
-        id: Date.now(), 
-        date: new Date().toISOString(),
+        id: Date.now(), date: new Date().toISOString(),
         title: req.body.title, category: req.body.category,
         content: req.body.content.substring(0, 2000),
         img: req.file ? `assets/news/${req.file.filename}` : "assets/img/auto-news.jpg"
