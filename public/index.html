@@ -7,66 +7,113 @@
     <style>
         :root {
             --ua-blue: #0057b7; --ua-yellow: #ffd700; --de-black: #222;
-            --soft-bg: #f4f7f9; --card-bg: #ffffff; --text-dark: #1a1a1a;
-            --border: #d1d9e0; --accent: #0057b7;
+            --soft-bg: #f8f9fa; --card-bg: #ffffff; --text-dark: #202124;
+            --border: #dadce0; --accent: #1a73e8; --meta-text: #5f6368;
         }
 
         body.dark-mode {
-            --soft-bg: #0f172a; --card-bg: #1e293b; --text-dark: #f1f5f9;
-            --border: #334155; --de-black: #f8fafc;
+            --soft-bg: #202124; --card-bg: #292a2d; --text-dark: #e8eaed;
+            --border: #3c4043; --meta-text: #9aa0a6; --accent: #8ab4f8;
         }
 
         * { box-sizing: border-box; }
         body, nav, .news-card, .sidebar-section, .modal-content, input, textarea { transition: background 0.3s, color 0.3s, border-color 0.3s; }
-        body { margin: 0; background: var(--soft-bg); color: var(--text-dark); font-family: 'Segoe UI', Roboto, sans-serif; line-height: 1.5; }
+        body { margin: 0; background: var(--soft-bg); color: var(--text-dark); font-family: 'Google Sans', 'Segoe UI', Roboto, sans-serif; line-height: 1.5; }
 
-        nav { background: var(--card-bg); border-top: 4px solid var(--ua-blue); border-bottom: 3px solid var(--ua-yellow); padding: 10px 5%; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        nav { background: var(--card-bg); border-bottom: 1px solid var(--border); padding: 12px 5%; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; }
         .nav-left { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
-        .logo { font-size: 1.4rem; font-weight: 900; text-decoration: none; display: flex; align-items: center; cursor: pointer; }
-        .logo .live { color: var(--ua-blue); text-transform: uppercase; }
-        .logo .city { color: var(--de-black); margin-left: 4px; font-weight: 400; }
+        .logo { font-size: 1.4rem; font-weight: 900; text-decoration: none; display: flex; align-items: center; cursor: pointer; letter-spacing: -0.5px;}
+        .logo .live { color: var(--ua-blue); }
+        .logo .city { color: var(--de-black); margin-left: 4px; font-weight: 500; }
 
         .info-bar { display: flex; gap: 10px; flex-wrap: wrap; }
-        .badge { font-size: 0.8rem; padding: 4px 10px; background: rgba(0,0,0,0.05); border-radius: 6px; display: flex; align-items: center; gap: 5px; }
-        body.dark-mode .badge { background: rgba(255,255,255,0.1); }
+        .badge { font-size: 0.8rem; padding: 4px 10px; background: rgba(0,0,0,0.04); border-radius: 12px; display: flex; align-items: center; gap: 5px; color: var(--meta-text); font-weight: 500;}
+        body.dark-mode .badge { background: rgba(255,255,255,0.08); }
 
-        .nav-right { display: flex; align-items: center; gap: 10px; }
-        .btn-icon { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-dark); }
-        .btn-contact { background: var(--ua-blue); color: #fff; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.75rem; text-transform: uppercase; }
+        .nav-right { display: flex; align-items: center; gap: 12px; }
+        .btn-icon { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-dark); padding: 5px; border-radius: 50%; }
+        .btn-icon:hover { background: rgba(0,0,0,0.05); }
+        body.dark-mode .btn-icon:hover { background: rgba(255,255,255,0.1); }
+        .btn-contact { background: var(--ua-blue); color: #fff; border: none; padding: 8px 16px; border-radius: 20px; font-weight: 600; cursor: pointer; font-size: 0.85rem; }
 
-        .container { max-width: 1200px; margin: 25px auto; padding: 0 15px; }
-        .news-grid { display: grid; grid-template-columns: 2.8fr 1.2fr; gap: 25px; }
+        .container { max-width: 1100px; margin: 20px auto; padding: 0 15px; }
+        .news-grid { display: grid; grid-template-columns: 2.8fr 1.2fr; gap: 30px; }
 
         @media (max-width: 900px) { .news-grid { grid-template-columns: 1fr; } .info-bar { display: none; } }
 
-        .main-feed { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
-        .news-card { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); overflow: hidden; display: flex; flex-direction: column; cursor: pointer; }
-        .news-card:hover { border-color: var(--ua-blue); transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .main-feed { display: flex; flex-direction: column; gap: 12px; }
         
-        .img-ratio { width: 100%; height: 160px; background: #e2e8f0; position: relative; overflow: hidden; }
-        .news-card img { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.4s; }
-        .news-card img.loaded { opacity: 1; }
+        .news-card { 
+            background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border);
+            display: flex; flex-direction: row; justify-content: space-between; align-items: stretch;
+            padding: 16px; cursor: pointer; text-decoration: none;
+        }
+        .news-card:hover { background: rgba(0,0,0,0.015); box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+        body.dark-mode .news-card:hover { background: rgba(255,255,255,0.02); }
 
-        .news-content { padding: 15px; flex-grow: 1; }
-        .news-tag { color: #ef4444; font-weight: 800; font-size: 0.65rem; text-transform: uppercase; margin-bottom: 5px; display: block; }
-        .news-card h3 { margin: 0 0 10px 0; font-size: 1.1rem; line-height: 1.3; }
+        .news-content { flex: 1; display: flex; flex-direction: column; padding-right: 16px; justify-content: space-between; }
+        .news-meta { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: var(--meta-text); font-weight: 500; margin-bottom: 8px; }
+        .news-icon { font-size: 14px; }
+        .news-card h3 { margin: 0 0 6px 0; font-size: 1.15rem; line-height: 1.4; font-weight: 500; color: var(--text-dark); }
+        .news-snippet { font-size: 0.85rem; color: var(--meta-text); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
-        .sidebar-section { background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); padding: 15px; margin-bottom: 20px; }
-        .sidebar-section h4 { margin-top: 0; border-bottom: 2px solid var(--ua-yellow); display: inline-block; margin-bottom: 15px; color: var(--ua-blue); }
-        .emergency-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-weight: bold; }
-        .emergency-item span { color: #ef4444; }
+        .news-img-wrap { width: 120px; height: 120px; flex-shrink: 0; border-radius: 12px; overflow: hidden; background: rgba(0,0,0,0.03); }
+        .news-img-wrap img { width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.4s; }
+        .news-img-wrap img.loaded { opacity: 1; }
 
-        .link-item { display: block; padding: 8px 0; color: var(--text-dark); text-decoration: none; font-size: 0.9rem; border-bottom: 1px solid var(--border); cursor: pointer; }
-        .link-item:hover { color: var(--ua-blue); padding-left: 5px; }
-        .transport-btn { display: block; background: var(--ua-blue); color: white; text-align: center; padding: 10px; border-radius: 8px; text-decoration: none; font-weight: bold; margin-top: 10px; font-size: 0.85rem; }
+        @media (max-width: 600px) {
+            .news-grid { gap: 15px; }
+            .news-card { padding: 12px; border-radius: 12px; }
+            .news-content { padding-right: 12px; }
+            .news-img-wrap { width: 80px; height: 80px; border-radius: 8px; }
+            .news-card h3 { font-size: 1.05rem; }
+            .news-snippet { display: none; }
+        }
+
+        .sidebar-section { background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border); padding: 18px; margin-bottom: 20px; }
+        .sidebar-section h4 { margin-top: 0; margin-bottom: 15px; color: var(--text-dark); font-size: 1.1rem; font-weight: 500; }
         
-        #floating-sos { position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px; background: #ef4444; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; z-index: 999; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4); animation: pulse-red 2s infinite; }
-        @keyframes pulse-red { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { transform: scale(1.1); box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+        .emergency-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-weight: 500; color: var(--text-dark); }
+        .emergency-item:last-child { border-bottom: none; padding-bottom: 0; }
+        .emergency-item span { color: #d93025; font-weight: bold; background: rgba(217, 48, 37, 0.1); padding: 2px 8px; border-radius: 12px;}
 
-        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; backdrop-filter:blur(5px); padding:15px; }
-        .modal-content { background:var(--card-bg); max-width:600px; margin:30px auto; border-radius:15px; padding:25px; position:relative; overflow-y: auto; max-height: 85vh; }
-        .close-btn { position:absolute; right:20px; top:15px; font-size:24px; cursor:pointer; }
-        footer { text-align: center; padding: 40px; color: #888; border-top: 1px solid var(--border); }
+        .link-item { display: block; padding: 10px 0; color: var(--text-dark); text-decoration: none; font-size: 0.95rem; border-bottom: 1px solid var(--border); cursor: pointer; }
+        .link-item:last-child { border-bottom: none; padding-bottom: 0; }
+        .link-item:hover { color: var(--accent); }
+
+        .transport-btn { display: block; background: var(--ua-blue); color: white; text-align: center; padding: 12px; border-radius: 20px; text-decoration: none; font-weight: bold; margin-top: 10px; font-size: 0.9rem; }
+        
+        /* 🟢 ОПТИМІЗАЦІЯ 2: Оновлено кнопку SOS на "Написати адміну" */
+        #floating-contact { 
+            position: fixed; bottom: 20px; right: 20px; 
+            background: #fff; color: #d93025; 
+            border-radius: 30px; padding: 12px 20px;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            font-size: 14px; font-weight: bold; cursor: pointer; z-index: 999; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15); 
+            transition: 0.2s; border: 1px solid var(--border);
+        }
+        #floating-contact:hover { transform: scale(1.05); box-shadow: 0 6px 16px rgba(0,0,0,0.2); }
+        body.dark-mode #floating-contact { background: #292a2d; color: #fff; border-color: #3c4043; }
+        
+        .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:2000; backdrop-filter:blur(2px); padding:15px; }
+        .modal-content { background:var(--card-bg); max-width:650px; margin:40px auto; border-radius:20px; padding:30px; position:relative; overflow-y: auto; max-height: 85vh; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .close-btn { position:absolute; right:20px; top:20px; font-size:28px; cursor:pointer; color: var(--meta-text); line-height: 1; }
+        .close-btn:hover { color: var(--text-dark); }
+        
+        #mTitle { font-size: 1.5rem; line-height: 1.3; margin-top: 0; margin-bottom: 10px;}
+        #mText { font-size: 1.05rem; color: var(--text-dark); }
+        
+        /* 🟢 ОПТИМІЗАЦІЯ 1: Кнопка на оригінал */
+        .origin-btn {
+            display: inline-block; background: var(--ua-blue); color: white; 
+            padding: 10px 20px; border-radius: 20px; text-decoration: none; 
+            font-weight: bold; font-size: 0.9rem; margin-top: 25px;
+            transition: 0.2s;
+        }
+        .origin-btn:hover { background: #1a73e8; transform: translateY(-2px); }
+
+        footer { text-align: center; padding: 40px; color: var(--meta-text); border-top: 1px solid var(--border); font-size: 0.9rem;}
     </style>
 </head>
 <body>
@@ -76,8 +123,7 @@
         <div onclick="window.location.reload()" class="logo"><span class="live">LIVE</span><span class="city">Дрезден</span></div>
         <div class="info-bar">
             <div class="badge" id="currency">€ .. ₴</div>
-            <div class="badge" id="clock">🇩🇪 00:00:00</div>
-            <div class="badge" id="clock-ua">🇺🇦 00:00:00</div>
+            <div class="badge" id="clock">🇩🇪 00:00</div>
         </div>
     </div>
     <div class="nav-right">
@@ -89,8 +135,8 @@
 <div class="container">
     <div class="news-grid">
         <main>
-            <div id="feedTitle" style="margin-bottom: 15px; font-weight: bold; display: none;"></div>
-            <div class="main-feed" id="newsGrid">Завантаження...</div>
+            <div id="feedTitle" style="margin-bottom: 20px; font-size: 1.2rem; font-weight: 500; color: var(--text-dark); display: none;"></div>
+            <div class="main-feed" id="newsGrid">Завантаження стрічки...</div>
         </main>
 
         <aside>
@@ -104,7 +150,7 @@
 
             <div class="sidebar-section">
                 <h4>🛒 Магазини сьогодні</h4>
-                <div id="status-content" style="padding: 10px; border-radius: 8px; font-weight: bold; text-align: center; font-size: 0.9rem;">Завантаження...</div>
+                <div id="status-content" style="padding: 12px; border-radius: 12px; font-weight: bold; text-align: center; font-size: 0.95rem;">Завантаження...</div>
             </div>
 
             <div class="sidebar-section">
@@ -115,7 +161,7 @@
 
             <div class="sidebar-section" style="border: 2px solid var(--ua-blue);">
                 <h4>🏗️ Послуги Майстра</h4>
-                <p style="font-size: 0.85rem; font-weight: bold;">Монтаж металоконструкцій</p>
+                <p style="font-size: 0.9rem; margin-top: 0; color: var(--meta-text);">Монтаж металоконструкцій у Дрездені</p>
                 <a href="#" onclick="toggleModal('contactModal', true)" class="transport-btn">📩 Замовити розрахунок</a>
             </div>
 
@@ -134,15 +180,19 @@
     </div>
 </div>
 
-<div id="floating-sos" title="Екстрена допомога" onclick="alert('Швидка: 112\nПоліція: 110\nЧерговий лікар: 116 117')">🆘</div>
+<div id="floating-contact" title="Зв'язатися з адміністрацією" onclick="toggleModal('contactModal', true)">
+    <span>📩</span> Написати адміну
+</div>
 
 <div id="newsModal" class="modal" onclick="closeByOutside(event)">
     <div class="modal-content">
         <span class="close-btn" onclick="toggleModal('newsModal', false)">&times;</span>
-        <img id="mImg" style="width:100%; border-radius:10px; margin-bottom:15px; display:none;">
         <h2 id="mTitle"></h2>
-        <div id="mDate" style="font-size:0.8rem; color:#888; margin-bottom:15px;"></div>
-        <div id="mText" style="white-space: pre-wrap; line-height: 1.6;"></div>
+        <div id="mDate" style="font-size:0.85rem; color:var(--meta-text); margin-bottom:20px; font-weight: 500;"></div>
+        <img id="mImg" style="width:100%; border-radius:12px; margin-bottom:20px; display:none; background: #e2e8f0;">
+        <div id="mText" style="white-space: pre-wrap; line-height: 1.7;"></div>
+        
+        <a href="#" target="_blank" id="mLink" class="origin-btn" style="display:none;">🔗 Читати оригінал на джерелі →</a>
     </div>
 </div>
 
@@ -150,44 +200,48 @@
     <div class="modal-content">
         <span class="close-btn" onclick="toggleModal('guideModal', false)">&times;</span>
         <h2 id="guideTitle" style="color: var(--ua-blue); margin-top: 0;"></h2>
-        <div id="guideText" style="white-space: pre-wrap; line-height: 1.6; margin-top: 15px;"></div>
+        <div id="guideText" style="white-space: pre-wrap; line-height: 1.7; margin-top: 15px;"></div>
     </div>
 </div>
 
 <div id="contactModal" class="modal" onclick="closeByOutside(event)">
     <div class="modal-content" style="max-width: 450px;">
         <span class="close-btn" onclick="toggleModal('contactModal', false)">&times;</span>
-        <h3>Зворотний зв'язок</h3>
+        <h3 style="margin-top: 0;">Зворотний зв'язок</h3>
         <form id="contactForm">
-            <input type="text" name="userName" required placeholder="Ваше ім'я" style="width:100%; padding:10px; margin-bottom:10px; border-radius:6px; border:1px solid var(--border); background: var(--card-bg); color: var(--text-dark);">
-            <input type="text" name="userContact" required placeholder="Телефон або Email" style="width:100%; padding:10px; margin-bottom:10px; border-radius:6px; border:1px solid var(--border); background: var(--card-bg); color: var(--text-dark);">
-            <textarea name="message" rows="4" required placeholder="Ваше повідомлення..." style="width:100%; padding:10px; margin-bottom:10px; border-radius:6px; border:1px solid var(--border); background: var(--card-bg); color: var(--text-dark);"></textarea>
-            <div style="margin-bottom:10px;">Код: <span id="captcha-code" style="font-weight:bold; color: var(--ua-blue);"></span> <input type="text" name="captcha" style="width:60px; padding: 5px;"></div>
-            <button type="submit" class="btn-contact" id="submitBtn" style="width:100%; padding:12px;">Надіслати</button>
+            <input type="text" name="userName" required placeholder="Ваше ім'я" style="width:100%; padding:12px; margin-bottom:12px; border-radius:8px; border:1px solid var(--border); background: var(--soft-bg); color: var(--text-dark);">
+            <input type="text" name="userContact" required placeholder="Телефон або Email" style="width:100%; padding:12px; margin-bottom:12px; border-radius:8px; border:1px solid var(--border); background: var(--soft-bg); color: var(--text-dark);">
+            <textarea name="message" rows="4" required placeholder="Ваше повідомлення..." style="width:100%; padding:12px; margin-bottom:12px; border-radius:8px; border:1px solid var(--border); background: var(--soft-bg); color: var(--text-dark);"></textarea>
+            <div style="margin-bottom:15px; color: var(--meta-text);">Код підтвердження: <span id="captcha-code" style="font-weight:bold; color: var(--text-dark); background: var(--soft-bg); padding: 4px 8px; border-radius: 4px;"></span> <input type="text" name="captcha" style="width:80px; padding: 8px; margin-left: 10px; border: 1px solid var(--border); border-radius: 4px;"></div>
+            <button type="submit" class="btn-contact" id="submitBtn" style="width:100%; padding:14px; font-size: 1rem;">Надіслати</button>
         </form>
     </div>
 </div>
 
-<footer>&copy; 2026 LIVE Дрезден</footer>
+<footer>&copy; 2026 LIVE Дрезден • Google News Style</footer>
 
 <script>
     let allNews = [];
     let captcha = "";
-    let guideData = {}; // База довідника
+    let guideData = {}; 
+
+    const sourceIcons = {
+        "ТСН Україна": "🇺🇦", "MDR Саксонія": "🇩🇪", 
+        "TAG24 Дрезден": "📰", "DW Новини": "🌐", "Адмін": "⚡"
+    };
 
     function updateClock() {
         const now = new Date();
-        document.getElementById('clock').innerText = '🇩🇪 ' + now.toLocaleTimeString('uk-UA', { timeZone: 'Europe/Berlin' });
-        document.getElementById('clock-ua').innerText = '🇺🇦 ' + now.toLocaleTimeString('uk-UA', { timeZone: 'Europe/Kyiv' });
+        document.getElementById('clock').innerText = '🇩🇪 ' + now.toLocaleTimeString('uk-UA', { timeZone: 'Europe/Berlin', hour: '2-digit', minute:'2-digit' });
     }
     setInterval(updateClock, 1000);
 
     function checkShops() {
         const now = new Date(); const day = now.getDay(); const hour = now.getHours();
         const el = document.getElementById('status-content');
-        if (day === 0) { el.innerText = "🔴 ЗАЧИНЕНО (Неділя)"; el.style.background = "#fee2e2"; el.style.color = "#ef4444"; }
-        else if (hour >= 20 || hour < 7) { el.innerText = "🟠 ЗАЧИНЕНО (Ніч)"; el.style.background = "#fff7ed"; el.style.color = "#ea580c"; }
-        else { el.innerText = "🟢 ВІДЧИНЕНО"; el.style.background = "#dcfce7"; el.style.color = "#16a34a"; }
+        if (day === 0) { el.innerText = "🔴 ЗАЧИНЕНО (Неділя)"; el.style.background = "rgba(217, 48, 37, 0.1)"; el.style.color = "#d93025"; }
+        else if (hour >= 20 || hour < 7) { el.innerText = "🟠 ЗАЧИНЕНО (Ніч)"; el.style.background = "rgba(242, 153, 0, 0.1)"; el.style.color = "#f29900"; }
+        else { el.innerText = "🟢 ВІДЧИНЕНО"; el.style.background = "rgba(24, 128, 56, 0.1)"; el.style.color = "#188038"; }
     }
 
     async function loadContent() {
@@ -199,11 +253,10 @@
             const urgent = document.getElementById('urgentFeed');
             urgent.innerHTML = allNews.slice(0, 5).map((n) => {
                 const origIndex = allNews.indexOf(n);
-                return `<div class="link-item" onclick="openNewsByIndex(${origIndex})"><div style="font-size:0.85rem; font-weight:500;">${n.title}</div></div>`
+                return `<div class="link-item" onclick="openNewsByIndex(${origIndex})"><div style="font-size:0.9rem; line-height: 1.3;">${n.title}</div></div>`
             }).join('');
         } catch (e) { document.getElementById('newsGrid').innerHTML = "Помилка завантаження новин."; }
 
-        // Завантажуємо довідник з сервера
         try {
             const gRes = await fetch('/api/guide');
             guideData = await gRes.json();
@@ -212,20 +265,31 @@
 
     function renderNews(newsToRender) {
         const grid = document.getElementById('newsGrid');
-        if (!newsToRender || newsToRender.length === 0) { grid.innerHTML = "<p style='grid-column: 1/-1;'>Новин у цій категорії поки немає.</p>"; return; }
+        if (!newsToRender || newsToRender.length === 0) { grid.innerHTML = "<p>Новин у цій категорії поки немає.</p>"; return; }
+        
         grid.innerHTML = newsToRender.map((n) => {
             const origIndex = allNews.indexOf(n);
             const hasPhoto = n.img && n.img !== "assets/img/auto-news.jpg";
+            const icon = sourceIcons[n.category] || "🗞️";
+            const shortDate = (n.date || "").split(',')[0];
+
             return `
                 <div class="news-card" onclick="openNewsByIndex(${origIndex})">
-                    <div class="img-ratio">
-                        ${hasPhoto ? `<img src="${n.img}" loading="lazy" onload="this.classList.add('loaded')" onerror="this.style.display='none'">` : ''}
-                    </div>
                     <div class="news-content">
-                        <span class="news-tag">${n.category || 'Дрезден'}</span>
-                        <h3>${n.title}</h3>
-                        <div style="font-size:0.7rem; color:#888;">${n.date}</div>
+                        <div>
+                            <div class="news-meta">
+                                <span class="news-icon">${icon}</span>
+                                <span>${n.category || 'Дрезден'}</span>
+                                <span style="opacity: 0.6;">• ${shortDate}</span>
+                            </div>
+                            <h3>${n.title}</h3>
+                            <div class="news-snippet">${(n.content || "").substring(0, 100)}...</div>
+                        </div>
                     </div>
+                    ${hasPhoto ? `
+                    <div class="news-img-wrap">
+                        <img src="${n.img}" loading="lazy" onload="this.classList.add('loaded')" onerror="this.style.display='none'">
+                    </div>` : ''}
                 </div>`;
         }).join('');
     }
@@ -234,11 +298,24 @@
         const n = allNews[index]; if(!n) return;
         const img = document.getElementById('mImg');
         if (n.img && n.img !== "assets/img/auto-news.jpg") { img.src = n.img; img.style.display = 'block'; } else { img.style.display = 'none'; }
-        document.getElementById('mTitle').innerText = n.title; document.getElementById('mDate').innerText = n.date; document.getElementById('mText').innerText = n.content;
+        
+        const icon = sourceIcons[n.category] || "🗞️";
+        document.getElementById('mTitle').innerText = n.title; 
+        document.getElementById('mDate').innerHTML = `${icon} <b>${n.category || 'Дрезден'}</b> &nbsp;•&nbsp; ${n.date}`; 
+        document.getElementById('mText').innerText = n.content;
+        
+        // 🟢 ОПТИМІЗАЦІЯ 1: Налаштування кнопки на оригінал
+        const originBtn = document.getElementById('mLink');
+        if (n.link && n.link.startsWith('http')) {
+            originBtn.href = n.link;
+            originBtn.style.display = 'inline-block';
+        } else {
+            originBtn.style.display = 'none';
+        }
+        
         toggleModal('newsModal', true);
     }
 
-    // НОВЕ: Функція відкриття довідника
     function openGuide(key) {
         if(guideData[key]) {
             document.getElementById('guideTitle').innerText = guideData[key].title;
@@ -250,17 +327,14 @@
     async function filterByCategory(cat) {
         const filtered = allNews.filter(n => n.category === cat).slice(0, 30);
         const titleEl = document.getElementById('feedTitle');
-        titleEl.innerHTML = `Рубрика: ${cat} <button onclick="window.location.reload()" style="margin-left:10px; padding:3px 8px; font-size:12px; cursor:pointer;">Скинути</button>`;
+        titleEl.innerHTML = `${cat} <button onclick="window.location.reload()" style="background:var(--soft-bg); color:var(--text-dark); border:1px solid var(--border); border-radius:20px; margin-left:12px; padding:4px 12px; font-size:13px; cursor:pointer;">✖ Скинути</button>`;
         titleEl.style.display = 'block'; renderNews(filtered); window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function toggleTheme() { document.body.classList.toggle('dark-mode'); localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light'); }
     async function fetchCurrency() { try { const res = await fetch('https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?valcode=EUR&json'); const data = await res.json(); document.getElementById('currency').innerHTML = `€ <b>${data[0].rate.toFixed(2)} ₴</b>`; } catch (e) {} }
 
-    function toggleModal(id, show) {
-        document.getElementById(id).style.display = show ? 'block' : 'none';
-        if(id === 'contactModal' && show) genCaptcha();
-    }
+    function toggleModal(id, show) { document.getElementById(id).style.display = show ? 'block' : 'none'; if(id === 'contactModal' && show) genCaptcha(); }
     function genCaptcha() { captcha = Math.random().toString(36).substring(2, 6).toUpperCase(); document.getElementById('captcha-code').innerText = captcha; }
 
     document.getElementById('contactForm').onsubmit = async (e) => {
