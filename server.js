@@ -15,7 +15,12 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const parser = new Parser({
   customFields: {
-    item: [['media:content', 'mediaContent'], ['enclosure', 'enclosure'], ['content:encoded', 'contentEncoded'], ['image', 'image']]
+    item: [
+      ["media:content", "mediaContent"],
+      ["enclosure", "enclosure"],
+      ["content:encoded", "contentEncoded"],
+      ["image", "image"]
+    ]
   }
 });
 
@@ -37,6 +42,7 @@ const defaultGuide = {
   med: { title: "🏥 Страхування", text: "Як обрати медичну касу..." }
 };
 
+// --- ІНІЦІАЛІЗАЦІЯ ФАЙЛІВ ---
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 if (!fs.existsSync(NEWS_FILE)) fs.writeFileSync(NEWS_FILE, "[]", "utf-8");
 if (!fs.existsSync(LOG_FILE)) fs.writeFileSync(LOG_FILE, "", "utf-8");
@@ -47,6 +53,7 @@ app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors());
 app.use(express.json());
 
+// --- MULTER ---
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, UPLOADS_DIR),
   filename: (req, file, cb) => {
@@ -56,79 +63,125 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage, limits: { fileSize: 5 * 1024 * 1024 } });
 
+// --- УТИЛІТИ ---
 const safeRead = (f, fb) => { try { return JSON.parse(fs.readFileSync(f, "utf-8")); } catch(e) { return fb; } };
 const safeWrite = (f, d) => fs.writeFileSync(f, JSON.stringify(d, null, 2), "utf-8");
-const getIP = (req) => req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket.remoteAddress;
+const getIP = (req) => req.headers["x-forwarded-for"]?.split(",")[0].trim() || req.socket.remoteAddress;
 
+// --- ГЛОБАЛЬНИЙ ЛОГЕР ---
 const writeLog = async (msg, type = "INFO") => {
-  const time = new Date().toLocaleString('uk-UA', { timeZone: 'Europe/Berlin' });
+  const time = new Date().toLocaleString("uk-UA", { timeZone: "Europe/Berlin" });
   const logStr = `[${time}] [${type}] ${msg}\n`;
   console.log(logStr.trim());
   fs.appendFileSync(LOG_FILE, logStr);
-  if (["ALERT", "SUCCESS", "MSG"].includes(type)) {
-    axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, { 
-        chat_id: CHAT_ID, text: `<b>ПОРТАЛ LIVE:</b>\n${msg}`, parse_mode: "HTML" 
-    }, { timeout: 5000 }).catch(() => {});
+
+  if (["ALERT", "SUCCESS", "MSG", "ERROR"].includes(type)) {
+    axios.post(
+      `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,
+      { chat_id: CHAT_ID, text: `<b>ПОРТАЛ LIVE:</b>\n${msg}`, parse_mode: "HTML" },
+      { timeout: 5000 }
+    ).catch(() => {});
   }
 };
 
-// --- ГРАБЕР НОВИН (Виправлено для ТСН) ---
+// --- ПЕРЕХОПЛЕННЯ ВСІХ ПОМИЛОК NODE ---
+process.on("uncaughtException", (err) => {
+  writeLog(`❌ Uncaught Exception: ${err.stack || err}`, "ERROR");
+});
+
+process.on("unhandledRejection", (reason) => {
+  writeLog(`⚠️ Unhandled Rejection: ${reason}`, "ERROR");
+});
+
+// --- ПЕРЕХОПЛЕННЯ ВСІХ console.error ---
+const origError = console.error;
+console.error = (...args) => {
+  writeLog(`🛑 Console Error: ${args.join(" ")}`, "ERROR");
+  origError(...args);
+};
+
+// --- ГРАБЕР НОВИН ---
 async function fetchNews() {
   const sources = [
-    { n: "ТСН Україна", u: "https://tsn.ua/rss/full.rss" }, 
+    { n: "ТСН Україна", u: "https://tsn.ua/rss/full.rss" },
     { n: "MDR Саксонія", u: "https://www.mdr.de/nachrichten/sachsen/index-rss.xml" },
     { n: "DW Новини", u: "https://rss.dw.com/xml/rss-ukr-all" }
   ];
+
   let news = safeRead(NEWS_FILE, []);
+
   for (const s of sources) {
     try {
-      const res = await axios.get(s.u, { 
-        timeout: 15000, 
-        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' } 
+      const res = await axios.get(s.u, {
+        timeout: 15000,
+        headers: { "User-Agent": "Mozilla/5.0" }
       });
+
       const feed = await parser.parseString(res.data);
+
       feed.items.forEach(item => {
         const title = (item.title || "").trim();
         if (!title || news.some(n => n.title === title)) return;
-        let content = (item.contentEncoded || item.contentSnippet || item.content || "").replace(/<[^>]*>?/gm, ' ').trim();
+
+        let content = (item.contentEncoded || item.contentSnippet || item.content || "")
+          .replace(/<[^>]*>?/gm, " ")
+          .trim();
+
         let image = item.enclosure?.url || item.mediaContent?.$.url;
-        if (!image && item.content) { 
-            const m = item.content.match(/src="([^"]+)"/); 
-            if (m) image = m[1]; 
+        if (!image && item.content) {
+          const m = item.content.match(/src="([^"]+)"/);
+          if (m) image = m[1];
         }
+
         news.push({
           id: Date.now() + Math.random(),
-          date: new Date(item.pubDate || Date.now()).toISOString(), 
-          title: title, category: s.n, link: item.link, 
+          date: new Date(item.pubDate || Date.now()).toISOString(),
+          title,
+          category: s.n,
+          link: item.link,
           img: image || "assets/img/auto-news.jpg",
           content: content.substring(0, 2000)
         });
       });
-    } catch (e) { console.error(`Помилка ${s.n}:`, e.message); }
+
+    } catch (e) {
+      console.error(`Помилка ${s.n}: ${e.message}`);
+    }
   }
+
   news.sort((a, b) => new Date(b.date) - new Date(a.date));
   safeWrite(NEWS_FILE, news.slice(0, 150));
 }
+
 setInterval(fetchNews, 20 * 60 * 1000);
 fetchNews();
 
 // --- API ---
 app.get("/api/news", (req, res) => {
-    const news = safeRead(NEWS_FILE, []).map(n => ({
-        ...n,
-        displayDate: new Date(n.date).toLocaleString('uk-UA', { timeZone: 'Europe/Berlin', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-    }));
-    res.json(news);
+  const news = safeRead(NEWS_FILE, []).map(n => ({
+    ...n,
+    displayDate: new Date(n.date).toLocaleString("uk-UA", {
+      timeZone: "Europe/Berlin",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    })
+  }));
+  res.json(news);
 });
 
 app.get("/api/guide", (req, res) => res.json(safeRead(GUIDE_FILE, defaultGuide)));
 
 app.post("/api/taxi", async (req, res) => {
   const { fax, userName, userContact, message } = req.body;
+
   if (fax) {
     await writeLog(`🛡️ БОТ ЗАБЛОКОВАНИЙ (Honeypot). IP: ${getIP(req)}`, "WARN");
     return res.json({ success: true });
   }
+
   await writeLog(`📩 НОВЕ ПОВІДОМЛЕННЯ:\n👤 ${userName}\n📞 ${userContact}\n💬 ${message}`, "MSG");
   res.json({ success: true });
 });
@@ -136,20 +189,26 @@ app.post("/api/taxi", async (req, res) => {
 app.post("/api/admin/login", async (req, res) => {
   const ip = getIP(req);
   const sec = safeRead(BLOCKS_FILE, { attempts: {}, blocked: {} });
-  if (sec.blocked[ip] && Date.now() < sec.blocked[ip]) return res.status(403).json({ error: "Ви заблоковані" });
+
+  if (sec.blocked[ip] && Date.now() < sec.blocked[ip])
+    return res.status(403).json({ error: "Ви заблоковані" });
+
   if (req.body.pass === ADMIN_PASSWORD) {
-    sec.attempts[ip] = 0; safeWrite(BLOCKS_FILE, sec);
+    sec.attempts[ip] = 0;
+    safeWrite(BLOCKS_FILE, sec);
     await writeLog(`🔓 Вхід в адмінку. IP: ${ip}`, "SUCCESS");
     return res.json({ success: true });
-  } else {
-    sec.attempts[ip] = (sec.attempts[ip] || 0) + 1;
-    if (sec.attempts[ip] >= 3) {
-        sec.blocked[ip] = Date.now() + 3600000;
-        await writeLog(`🚨 БЛОКУВАННЯ IP ${ip}`, "ALERT");
-    }
-    safeWrite(BLOCKS_FILE, sec);
-    return res.status(401).json({ error: "Невірний пароль" });
   }
+
+  sec.attempts[ip] = (sec.attempts[ip] || 0) + 1;
+
+  if (sec.attempts[ip] >= 3) {
+    sec.blocked[ip] = Date.now() + 3600000;
+    await writeLog(`🚨 БЛОКУВАННЯ IP ${ip}`, "ALERT");
+  }
+
+  safeWrite(BLOCKS_FILE, sec);
+  res.status(401).json({ error: "Невірний пароль" });
 });
 
 app.post("/api/guide/update", (req, res) => {
@@ -160,32 +219,44 @@ app.post("/api/guide/update", (req, res) => {
 });
 
 app.post("/api/news/add", upload.single("image"), (req, res) => {
-    if (req.body.pass !== ADMIN_PASSWORD) return res.status(401).send();
-    const news = safeRead(NEWS_FILE, []);
-    news.unshift({
-        id: Date.now(), date: new Date().toISOString(),
-        title: req.body.title, category: req.body.category,
-        content: req.body.content.substring(0, 2000),
-        img: req.file ? `assets/news/${req.file.filename}` : "assets/img/auto-news.jpg"
-    });
-    safeWrite(NEWS_FILE, news.slice(0, 150));
-    res.json({ success: true });
+  if (req.body.pass !== ADMIN_PASSWORD) return res.status(401).send();
+
+  const news = safeRead(NEWS_FILE, []);
+
+  news.unshift({
+    id: Date.now(),
+    date: new Date().toISOString(),
+    title: req.body.title,
+    category: req.body.category,
+    content: req.body.content.substring(0, 2000),
+    img: req.file ? `assets/news/${req.file.filename}` : "assets/img/auto-news.jpg"
+  });
+
+  safeWrite(NEWS_FILE, news.slice(0, 150));
+  res.json({ success: true });
 });
 
 app.get("/api/admin/logs", (req, res) => {
   if (req.query.pass !== ADMIN_PASSWORD) return res.status(401).send();
-  try { res.send(fs.readFileSync(LOG_FILE, "utf-8")); } catch (e) { res.send("Логи порожні"); }
+  try {
+    res.send(fs.readFileSync(LOG_FILE, "utf-8"));
+  } catch {
+    res.send("Логи порожні");
+  }
 });
 
+// --- STATIC ---
 app.use("/assets", express.static(path.join(__dirname, "assets")));
 app.use(express.static(path.join(__dirname, "public")));
 app.get("*", (req, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
 
+// --- START ---
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server on port ${PORT}`);
+
   setInterval(() => {
     const host = process.env.RENDER_EXTERNAL_HOSTNAME;
-    if (host) https.get(`https://${host}/`).on('error', () => {});
+    if (host) https.get(`https://${host}/`).on("error", () => {});
   }, 13 * 60 * 1000);
 });
