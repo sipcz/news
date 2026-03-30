@@ -38,22 +38,15 @@
 
         .container { max-width: 1100px; margin: 20px auto; padding: 0 15px; }
         .news-grid { display: grid; grid-template-columns: 2.8fr 1.2fr; gap: 30px; }
-
         @media (max-width: 900px) { .news-grid { grid-template-columns: 1fr; } .info-bar { display: none; } }
 
         .main-feed { display: flex; flex-direction: column; gap: 12px; }
-        
-        .news-card { 
-            background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border);
-            display: flex; flex-direction: row; justify-content: space-between; align-items: stretch;
-            padding: 16px; cursor: pointer; text-decoration: none;
-        }
+        .news-card { background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border); display: flex; flex-direction: row; justify-content: space-between; align-items: stretch; padding: 16px; cursor: pointer; text-decoration: none; }
         .news-card:hover { background: rgba(0,0,0,0.015); box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
         body.dark-mode .news-card:hover { background: rgba(255,255,255,0.02); }
 
         .news-content { flex: 1; display: flex; flex-direction: column; padding-right: 16px; justify-content: space-between; }
         .news-meta { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: var(--meta-text); font-weight: 500; margin-bottom: 8px; }
-        .news-icon { font-size: 14px; }
         .news-card h3 { margin: 0 0 6px 0; font-size: 1.15rem; line-height: 1.4; font-weight: 500; color: var(--text-dark); }
         .news-snippet { font-size: 0.85rem; color: var(--meta-text); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
@@ -62,12 +55,9 @@
         .news-img-wrap img.loaded { opacity: 1; }
 
         @media (max-width: 600px) {
-            .news-grid { gap: 15px; }
-            .news-card { padding: 12px; border-radius: 12px; }
-            .news-content { padding-right: 12px; }
-            .news-img-wrap { width: 80px; height: 80px; border-radius: 8px; }
-            .news-card h3 { font-size: 1.05rem; }
-            .news-snippet { display: none; }
+            .news-grid { gap: 15px; } .news-card { padding: 12px; border-radius: 12px; }
+            .news-content { padding-right: 12px; } .news-img-wrap { width: 80px; height: 80px; border-radius: 8px; }
+            .news-card h3 { font-size: 1.05rem; } .news-snippet { display: none; }
         }
 
         .sidebar-section { background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border); padding: 18px; margin-bottom: 20px; }
@@ -80,22 +70,30 @@
         .link-item { display: block; padding: 10px 0; color: var(--text-dark); text-decoration: none; font-size: 0.95rem; border-bottom: 1px solid var(--border); cursor: pointer; }
         .link-item:last-child { border-bottom: none; padding-bottom: 0; }
         .link-item:hover { color: var(--accent); }
-
         .transport-btn { display: block; background: var(--ua-blue); color: white; text-align: center; padding: 12px; border-radius: 20px; text-decoration: none; font-weight: bold; margin-top: 10px; font-size: 0.9rem; }
         
-        /* 🟢 ОПТИМІЗАЦІЯ 2: Оновлено кнопку SOS на "Написати адміну" */
-        #floating-contact { 
-            position: fixed; bottom: 20px; right: 20px; 
-            background: #fff; color: #d93025; 
-            border-radius: 30px; padding: 12px 20px;
-            display: flex; align-items: center; justify-content: center; gap: 8px;
-            font-size: 14px; font-weight: bold; cursor: pointer; z-index: 999; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15); 
-            transition: 0.2s; border: 1px solid var(--border);
-        }
-        #floating-contact:hover { transform: scale(1.05); box-shadow: 0 6px 16px rgba(0,0,0,0.2); }
-        body.dark-mode #floating-contact { background: #292a2d; color: #fff; border-color: #3c4043; }
+        /* --- СТИЛІ ЧАТ-БОТА --- */
+        #chat-btn { position: fixed; bottom: 20px; right: 20px; background: var(--ua-blue); color: #fff; border-radius: 30px; padding: 14px 22px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 15px; font-weight: bold; cursor: pointer; z-index: 999; box-shadow: 0 4px 12px rgba(0,0,0,0.2); transition: 0.2s; border: none; }
+        #chat-btn:hover { transform: scale(1.05); background: #1a73e8; }
         
+        #chat-widget { position: fixed; bottom: 80px; right: 20px; width: 320px; height: 400px; background: var(--card-bg); border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); border: 1px solid var(--border); z-index: 1000; display: flex; flex-direction: column; overflow: hidden; transform: translateY(20px); opacity: 0; pointer-events: none; transition: 0.3s; }
+        #chat-widget.active { transform: translateY(0); opacity: 1; pointer-events: auto; }
+        
+        .chat-header { background: var(--ua-blue); color: white; padding: 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+        .chat-header span { cursor: pointer; font-size: 18px; opacity: 0.8; }
+        .chat-header span:hover { opacity: 1; }
+        
+        .chat-body { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background: var(--soft-bg); }
+        .msg-bot { background: var(--card-bg); border: 1px solid var(--border); padding: 10px 14px; border-radius: 12px 12px 12px 0; font-size: 0.9rem; color: var(--text-dark); align-self: flex-start; max-width: 85%; line-height: 1.4;}
+        .msg-user { background: var(--ua-blue); color: white; padding: 10px 14px; border-radius: 12px 12px 0 12px; font-size: 0.9rem; align-self: flex-end; max-width: 85%; line-height: 1.4;}
+        
+        .chat-options { display: flex; flex-direction: column; gap: 5px; margin-top: 5px; }
+        .chat-opt-btn { background: rgba(0, 87, 183, 0.1); color: var(--ua-blue); border: 1px solid rgba(0, 87, 183, 0.2); padding: 8px 12px; border-radius: 16px; font-size: 0.85rem; cursor: pointer; text-align: left; transition: 0.2s; font-weight: 500;}
+        .chat-opt-btn:hover { background: var(--ua-blue); color: white; }
+        body.dark-mode .chat-opt-btn { background: rgba(138, 180, 248, 0.1); color: var(--accent); border-color: var(--border); }
+        body.dark-mode .chat-opt-btn:hover { background: var(--accent); color: #111; }
+        /* ----------------------- */
+
         .modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:2000; backdrop-filter:blur(2px); padding:15px; }
         .modal-content { background:var(--card-bg); max-width:650px; margin:40px auto; border-radius:20px; padding:30px; position:relative; overflow-y: auto; max-height: 85vh; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
         .close-btn { position:absolute; right:20px; top:20px; font-size:28px; cursor:pointer; color: var(--meta-text); line-height: 1; }
@@ -104,13 +102,7 @@
         #mTitle { font-size: 1.5rem; line-height: 1.3; margin-top: 0; margin-bottom: 10px;}
         #mText { font-size: 1.05rem; color: var(--text-dark); }
         
-        /* 🟢 ОПТИМІЗАЦІЯ 1: Кнопка на оригінал */
-        .origin-btn {
-            display: inline-block; background: var(--ua-blue); color: white; 
-            padding: 10px 20px; border-radius: 20px; text-decoration: none; 
-            font-weight: bold; font-size: 0.9rem; margin-top: 25px;
-            transition: 0.2s;
-        }
+        .origin-btn { display: inline-block; background: var(--ua-blue); color: white; padding: 10px 20px; border-radius: 20px; text-decoration: none; font-weight: bold; font-size: 0.9rem; margin-top: 25px; transition: 0.2s; }
         .origin-btn:hover { background: #1a73e8; transform: translateY(-2px); }
 
         footer { text-align: center; padding: 40px; color: var(--meta-text); border-top: 1px solid var(--border); font-size: 0.9rem;}
@@ -171,7 +163,7 @@
                 <div class="emergency-item">Швидка / Пожежна <span>112</span></div>
                 <div class="emergency-item">Черговий лікар <span>116 117</span></div>
             </div>
-
+            
             <div class="sidebar-section">
                 <h4>Останні новини</h4>
                 <div id="urgentFeed"></div>
@@ -180,8 +172,21 @@
     </div>
 </div>
 
-<div id="floating-contact" title="Зв'язатися з адміністрацією" onclick="toggleModal('contactModal', true)">
-    <span>📩</span> Написати адміну
+<button id="chat-btn" onclick="toggleChat()">💬 Чат-бот</button>
+
+<div id="chat-widget">
+    <div class="chat-header">
+        <div>🤖 Бот-помічник</div>
+        <span onclick="toggleChat()">✖</span>
+    </div>
+    <div class="chat-body" id="chat-body">
+        <div class="msg-bot">Привіт! 👋 Я віртуальний помічник порталу LIVE Дрезден. Що вас цікавить?</div>
+        <div class="chat-options" id="chat-opts-main">
+            <button class="chat-opt-btn" onclick="botReply('магазини', 'Чи працюють сьогодні магазини?')">🛒 Чи працюють магазини?</button>
+            <button class="chat-opt-btn" onclick="botReply('довідник', 'Де знайти інформацію про житло/роботу?')">📘 Довідник емігранта</button>
+            <button class="chat-opt-btn" onclick="botReply('адмін', 'Хочу написати адміністратору')">✉️ Зв'язок з адміном</button>
+        </div>
+    </div>
 </div>
 
 <div id="newsModal" class="modal" onclick="closeByOutside(event)">
@@ -191,7 +196,6 @@
         <div id="mDate" style="font-size:0.85rem; color:var(--meta-text); margin-bottom:20px; font-weight: 500;"></div>
         <img id="mImg" style="width:100%; border-radius:12px; margin-bottom:20px; display:none; background: #e2e8f0;">
         <div id="mText" style="white-space: pre-wrap; line-height: 1.7;"></div>
-        
         <a href="#" target="_blank" id="mLink" class="origin-btn" style="display:none;">🔗 Читати оригінал на джерелі →</a>
     </div>
 </div>
@@ -221,139 +225,96 @@
 <footer>&copy; 2026 LIVE Дрезден • Google News Style</footer>
 
 <script>
-    let allNews = [];
-    let captcha = "";
-    let guideData = {}; 
+    let allNews = []; let captcha = ""; let guideData = {}; 
+    const sourceIcons = { "ТСН Україна": "🇺🇦", "MDR Саксонія": "🇩🇪", "TAG24 Дрезден": "📰", "DW Новини": "🌐", "Адмін": "⚡" };
 
-    const sourceIcons = {
-        "ТСН Україна": "🇺🇦", "MDR Саксонія": "🇩🇪", 
-        "TAG24 Дрезден": "📰", "DW Новини": "🌐", "Адмін": "⚡"
-    };
-
-    function updateClock() {
-        const now = new Date();
-        document.getElementById('clock').innerText = '🇩🇪 ' + now.toLocaleTimeString('uk-UA', { timeZone: 'Europe/Berlin', hour: '2-digit', minute:'2-digit' });
-    }
+    function updateClock() { const now = new Date(); document.getElementById('clock').innerText = '🇩🇪 ' + now.toLocaleTimeString('uk-UA', { timeZone: 'Europe/Berlin', hour: '2-digit', minute:'2-digit' }); }
     setInterval(updateClock, 1000);
 
     function checkShops() {
-        const now = new Date(); const day = now.getDay(); const hour = now.getHours();
-        const el = document.getElementById('status-content');
+        const now = new Date(); const day = now.getDay(); const hour = now.getHours(); const el = document.getElementById('status-content');
         if (day === 0) { el.innerText = "🔴 ЗАЧИНЕНО (Неділя)"; el.style.background = "rgba(217, 48, 37, 0.1)"; el.style.color = "#d93025"; }
         else if (hour >= 20 || hour < 7) { el.innerText = "🟠 ЗАЧИНЕНО (Ніч)"; el.style.background = "rgba(242, 153, 0, 0.1)"; el.style.color = "#f29900"; }
         else { el.innerText = "🟢 ВІДЧИНЕНО"; el.style.background = "rgba(24, 128, 56, 0.1)"; el.style.color = "#188038"; }
+        return el.innerText; // Повертаємо текст для бота
     }
 
     async function loadContent() {
         try {
-            const res = await fetch('/api/news');
-            allNews = await res.json();
-            renderNews(allNews.slice(0, 30));
-            
-            const urgent = document.getElementById('urgentFeed');
-            urgent.innerHTML = allNews.slice(0, 5).map((n) => {
-                const origIndex = allNews.indexOf(n);
-                return `<div class="link-item" onclick="openNewsByIndex(${origIndex})"><div style="font-size:0.9rem; line-height: 1.3;">${n.title}</div></div>`
-            }).join('');
+            const res = await fetch('/api/news'); allNews = await res.json(); renderNews(allNews.slice(0, 30));
+            document.getElementById('urgentFeed').innerHTML = allNews.slice(0, 5).map(n => `<div class="link-item" onclick="openNewsByIndex(${allNews.indexOf(n)})"><div style="font-size:0.9rem; line-height: 1.3;">${n.title}</div></div>`).join('');
         } catch (e) { document.getElementById('newsGrid').innerHTML = "Помилка завантаження новин."; }
-
-        try {
-            const gRes = await fetch('/api/guide');
-            guideData = await gRes.json();
-        } catch(e) {}
+        try { const gRes = await fetch('/api/guide'); guideData = await gRes.json(); } catch(e) {}
     }
 
     function renderNews(newsToRender) {
         const grid = document.getElementById('newsGrid');
-        if (!newsToRender || newsToRender.length === 0) { grid.innerHTML = "<p>Новин у цій категорії поки немає.</p>"; return; }
-        
+        if (!newsToRender || newsToRender.length === 0) { grid.innerHTML = "<p>Новин немає.</p>"; return; }
         grid.innerHTML = newsToRender.map((n) => {
-            const origIndex = allNews.indexOf(n);
-            const hasPhoto = n.img && n.img !== "assets/img/auto-news.jpg";
-            const icon = sourceIcons[n.category] || "🗞️";
-            const shortDate = (n.date || "").split(',')[0];
-
-            return `
-                <div class="news-card" onclick="openNewsByIndex(${origIndex})">
-                    <div class="news-content">
-                        <div>
-                            <div class="news-meta">
-                                <span class="news-icon">${icon}</span>
-                                <span>${n.category || 'Дрезден'}</span>
-                                <span style="opacity: 0.6;">• ${shortDate}</span>
-                            </div>
-                            <h3>${n.title}</h3>
-                            <div class="news-snippet">${(n.content || "").substring(0, 100)}...</div>
-                        </div>
-                    </div>
-                    ${hasPhoto ? `
-                    <div class="news-img-wrap">
-                        <img src="${n.img}" loading="lazy" onload="this.classList.add('loaded')" onerror="this.style.display='none'">
-                    </div>` : ''}
-                </div>`;
+            const hasPhoto = n.img && n.img !== "assets/img/auto-news.jpg"; const icon = sourceIcons[n.category] || "🗞️"; const shortDate = (n.date || "").split(',')[0];
+            return `<div class="news-card" onclick="openNewsByIndex(${allNews.indexOf(n)})"><div class="news-content"><div><div class="news-meta"><span class="news-icon">${icon}</span><span>${n.category || 'Дрезден'}</span><span style="opacity: 0.6;">• ${shortDate}</span></div><h3>${n.title}</h3><div class="news-snippet">${(n.content || "").substring(0, 100)}...</div></div></div>${hasPhoto ? `<div class="news-img-wrap"><img src="${n.img}" loading="lazy" onload="this.classList.add('loaded')" onerror="this.style.display='none'"></div>` : ''}</div>`;
         }).join('');
     }
 
     function openNewsByIndex(index) {
-        const n = allNews[index]; if(!n) return;
-        const img = document.getElementById('mImg');
+        const n = allNews[index]; if(!n) return; const img = document.getElementById('mImg');
         if (n.img && n.img !== "assets/img/auto-news.jpg") { img.src = n.img; img.style.display = 'block'; } else { img.style.display = 'none'; }
-        
-        const icon = sourceIcons[n.category] || "🗞️";
-        document.getElementById('mTitle').innerText = n.title; 
-        document.getElementById('mDate').innerHTML = `${icon} <b>${n.category || 'Дрезден'}</b> &nbsp;•&nbsp; ${n.date}`; 
-        document.getElementById('mText').innerText = n.content;
-        
-        // 🟢 ОПТИМІЗАЦІЯ 1: Налаштування кнопки на оригінал
+        document.getElementById('mTitle').innerText = n.title; document.getElementById('mDate').innerHTML = `${sourceIcons[n.category] || "🗞️"} <b>${n.category || 'Дрезден'}</b> &nbsp;•&nbsp; ${n.date}`; document.getElementById('mText').innerText = n.content;
         const originBtn = document.getElementById('mLink');
-        if (n.link && n.link.startsWith('http')) {
-            originBtn.href = n.link;
-            originBtn.style.display = 'inline-block';
-        } else {
-            originBtn.style.display = 'none';
-        }
-        
+        if (n.link && n.link.startsWith('http')) { originBtn.href = n.link; originBtn.style.display = 'inline-block'; } else { originBtn.style.display = 'none'; }
         toggleModal('newsModal', true);
     }
 
-    function openGuide(key) {
-        if(guideData[key]) {
-            document.getElementById('guideTitle').innerText = guideData[key].title;
-            document.getElementById('guideText').innerText = guideData[key].text;
-            toggleModal('guideModal', true);
-        }
-    }
-
-    async function filterByCategory(cat) {
-        const filtered = allNews.filter(n => n.category === cat).slice(0, 30);
-        const titleEl = document.getElementById('feedTitle');
-        titleEl.innerHTML = `${cat} <button onclick="window.location.reload()" style="background:var(--soft-bg); color:var(--text-dark); border:1px solid var(--border); border-radius:20px; margin-left:12px; padding:4px 12px; font-size:13px; cursor:pointer;">✖ Скинути</button>`;
-        titleEl.style.display = 'block'; renderNews(filtered); window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
+    function openGuide(key) { if(guideData[key]) { document.getElementById('guideTitle').innerText = guideData[key].title; document.getElementById('guideText').innerText = guideData[key].text; toggleModal('guideModal', true); } }
+    async function filterByCategory(cat) { const filtered = allNews.filter(n => n.category === cat).slice(0, 30); const titleEl = document.getElementById('feedTitle'); titleEl.innerHTML = `${cat} <button onclick="window.location.reload()" style="background:var(--soft-bg); color:var(--text-dark); border:1px solid var(--border); border-radius:20px; margin-left:12px; padding:4px 12px; font-size:13px; cursor:pointer;">✖ Скинути</button>`; titleEl.style.display = 'block'; renderNews(filtered); window.scrollTo({ top: 0, behavior: 'smooth' }); }
     function toggleTheme() { document.body.classList.toggle('dark-mode'); localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light'); }
     async function fetchCurrency() { try { const res = await fetch('https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?valcode=EUR&json'); const data = await res.json(); document.getElementById('currency').innerHTML = `€ <b>${data[0].rate.toFixed(2)} ₴</b>`; } catch (e) {} }
 
     function toggleModal(id, show) { document.getElementById(id).style.display = show ? 'block' : 'none'; if(id === 'contactModal' && show) genCaptcha(); }
     function genCaptcha() { captcha = Math.random().toString(36).substring(2, 6).toUpperCase(); document.getElementById('captcha-code').innerText = captcha; }
-
-    document.getElementById('contactForm').onsubmit = async (e) => {
-        e.preventDefault(); const btn = document.getElementById('submitBtn'); const fd = new FormData(e.target); const data = Object.fromEntries(fd);
-        if (data.captcha.toUpperCase() !== captcha) { alert("Невірний код!"); return; }
-        btn.innerText = "Надсилаю..."; btn.disabled = true;
-        try {
-            const res = await fetch('/api/taxi', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: data.userName, phone: data.userContact, comment: data.message }) });
-            if (res.ok) { alert("✅ Надіслано!"); e.target.reset(); toggleModal('contactModal', false); }
-        } catch (err) { alert("Помилка"); }
-        btn.innerText = "Надіслати"; btn.disabled = false;
-    };
-
+    document.getElementById('contactForm').onsubmit = async (e) => { e.preventDefault(); const btn = document.getElementById('submitBtn'); const data = Object.fromEntries(new FormData(e.target)); if (data.captcha.toUpperCase() !== captcha) { alert("Невірний код!"); return; } btn.innerText = "Надсилаю..."; btn.disabled = true; try { const res = await fetch('/api/taxi', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: data.userName, phone: data.userContact, comment: data.message }) }); if (res.ok) { alert("✅ Надіслано!"); e.target.reset(); toggleModal('contactModal', false); } } catch (err) { alert("Помилка"); } btn.innerText = "Надіслати"; btn.disabled = false; };
     function closeByOutside(e) { if (e.target.classList.contains('modal')) { toggleModal('newsModal', false); toggleModal('contactModal', false); toggleModal('guideModal', false); } }
 
-    window.onload = () => {
-        if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
-        updateClock(); fetchCurrency(); loadContent(); checkShops();
-    };
+    /* --- ЛОГІКА ЧАТ-БОТА --- */
+    function toggleChat() {
+        const widget = document.getElementById('chat-widget');
+        widget.classList.toggle('active');
+    }
+
+    function botReply(action, userText) {
+        const body = document.getElementById('chat-body');
+        const opts = document.getElementById('chat-opts-main');
+        if(opts) opts.remove(); // Прибираємо кнопки після кліку
+
+        // Додаємо повідомлення юзера
+        body.innerHTML += `<div class="msg-user">${userText}</div>`;
+
+        // Імітація "Бот друкує..."
+        setTimeout(() => {
+            let botText = "";
+            let newOpts = "";
+            
+            if (action === 'магазини') {
+                const status = checkShops();
+                botText = `Зараз статус магазинів: <b>${status}</b>.<br>Зверніть увагу, що у неділю всі супермаркети (Kaufland, REWE, Lidl) зачинені. Відкриті лише магазини на головному вокзалі (Hauptbahnhof).`;
+                newOpts = `<button class="chat-opt-btn" onclick="botReply('адмін', 'Хочу написати адміністратору')">✉️ Зв'язок з адміном</button>`;
+            } else if (action === 'довідник') {
+                botText = `Усю інформацію про житло, роботу та Параграф 24 ви можете знайти у нашому <b>Довіднику емігранта</b> (меню зліва на головній сторінці).`;
+                newOpts = `<button class="chat-opt-btn" onclick="botReply('адмін', 'Хочу написати адміністратору')">✉️ Зв'язок з адміном</button>`;
+            } else if (action === 'адмін') {
+                botText = `Без проблем! Натисніть кнопку нижче, щоб відкрити форму зв'язку. Адміністратор відповість вам найближчим часом.`;
+                newOpts = `<button class="chat-opt-btn" style="background:var(--ua-blue); color:white; text-align:center;" onclick="toggleModal('contactModal', true); toggleChat();">Відкрити форму зв'язку</button>`;
+            }
+
+            body.innerHTML += `<div class="msg-bot">${botText}</div>`;
+            if (newOpts) {
+                body.innerHTML += `<div class="chat-options" id="chat-opts-main">${newOpts}</div>`;
+            }
+            body.scrollTop = body.scrollHeight; // Скрол вниз
+        }, 600);
+    }
+
+    window.onload = () => { if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode'); updateClock(); fetchCurrency(); loadContent(); checkShops(); };
 </script>
 </body>
 </html>
