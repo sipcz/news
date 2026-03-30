@@ -63,14 +63,9 @@
         .sidebar-section { background: var(--card-bg); border-radius: 16px; border: 1px solid var(--border); padding: 18px; margin-bottom: 20px; }
         .sidebar-section h4 { margin-top: 0; margin-bottom: 15px; color: var(--text-dark); font-size: 1.1rem; font-weight: 500; }
         
-        .emergency-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-weight: 500; color: var(--text-dark); }
-        .emergency-item:last-child { border-bottom: none; padding-bottom: 0; }
-        .emergency-item span { color: #d93025; font-weight: bold; background: rgba(217, 48, 37, 0.1); padding: 2px 8px; border-radius: 12px;}
-
         .link-item { display: block; padding: 10px 0; color: var(--text-dark); text-decoration: none; font-size: 0.95rem; border-bottom: 1px solid var(--border); cursor: pointer; }
         .link-item:last-child { border-bottom: none; padding-bottom: 0; }
         .link-item:hover { color: var(--accent); }
-        .transport-btn { display: block; background: var(--ua-blue); color: white; text-align: center; padding: 12px; border-radius: 20px; text-decoration: none; font-weight: bold; margin-top: 10px; font-size: 0.9rem; }
         
         /* --- СТИЛІ ЧАТ-БОТА --- */
         #chat-btn { position: fixed; bottom: 20px; right: 20px; background: var(--ua-blue); color: #fff; border-radius: 30px; padding: 14px 22px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 15px; font-weight: bold; cursor: pointer; z-index: 999; box-shadow: 0 4px 12px rgba(0,0,0,0.2); transition: 0.2s; border: none; }
@@ -120,7 +115,6 @@
     </div>
     <div class="nav-right">
         <button class="btn-icon" onclick="toggleTheme()" id="themeToggle">🌓</button>
-        <button class="btn-contact" onclick="toggleModal('contactModal', true)">Написати</button>
     </div>
 </nav>
 
@@ -151,19 +145,6 @@
                 <a href="https://www.schloesserland-sachsen.de/" target="_blank" class="link-item">🏰 Замки Саксонії</a>
             </div>
 
-            <div class="sidebar-section" style="border: 2px solid var(--ua-blue);">
-                <h4>🏗️ Послуги Майстра</h4>
-                <p style="font-size: 0.9rem; margin-top: 0; color: var(--meta-text);">Монтаж металоконструкцій у Дрездені</p>
-                <a href="#" onclick="toggleModal('contactModal', true)" class="transport-btn">📩 Замовити розрахунок</a>
-            </div>
-
-            <div class="sidebar-section">
-                <h4>Важливі контакти</h4>
-                <div class="emergency-item">Поліція <span>110</span></div>
-                <div class="emergency-item">Швидка / Пожежна <span>112</span></div>
-                <div class="emergency-item">Черговий лікар <span>116 117</span></div>
-            </div>
-            
             <div class="sidebar-section">
                 <h4>Останні новини</h4>
                 <div id="urgentFeed"></div>
@@ -236,7 +217,7 @@
         if (day === 0) { el.innerText = "🔴 ЗАЧИНЕНО (Неділя)"; el.style.background = "rgba(217, 48, 37, 0.1)"; el.style.color = "#d93025"; }
         else if (hour >= 20 || hour < 7) { el.innerText = "🟠 ЗАЧИНЕНО (Ніч)"; el.style.background = "rgba(242, 153, 0, 0.1)"; el.style.color = "#f29900"; }
         else { el.innerText = "🟢 ВІДЧИНЕНО"; el.style.background = "rgba(24, 128, 56, 0.1)"; el.style.color = "#188038"; }
-        return el.innerText; // Повертаємо текст для бота
+        return el.innerText;
     }
 
     async function loadContent() {
@@ -284,16 +265,12 @@
     function botReply(action, userText) {
         const body = document.getElementById('chat-body');
         const opts = document.getElementById('chat-opts-main');
-        if(opts) opts.remove(); // Прибираємо кнопки після кліку
+        if(opts) opts.remove(); 
 
-        // Додаємо повідомлення юзера
         body.innerHTML += `<div class="msg-user">${userText}</div>`;
 
-        // Імітація "Бот друкує..."
         setTimeout(() => {
-            let botText = "";
-            let newOpts = "";
-            
+            let botText = ""; let newOpts = "";
             if (action === 'магазини') {
                 const status = checkShops();
                 botText = `Зараз статус магазинів: <b>${status}</b>.<br>Зверніть увагу, що у неділю всі супермаркети (Kaufland, REWE, Lidl) зачинені. Відкриті лише магазини на головному вокзалі (Hauptbahnhof).`;
@@ -307,10 +284,8 @@
             }
 
             body.innerHTML += `<div class="msg-bot">${botText}</div>`;
-            if (newOpts) {
-                body.innerHTML += `<div class="chat-options" id="chat-opts-main">${newOpts}</div>`;
-            }
-            body.scrollTop = body.scrollHeight; // Скрол вниз
+            if (newOpts) { body.innerHTML += `<div class="chat-options" id="chat-opts-main">${newOpts}</div>`; }
+            body.scrollTop = body.scrollHeight; 
         }, 600);
     }
 
