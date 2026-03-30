@@ -42,7 +42,7 @@ const defaultGuide = {
   med: { title: "🏥 Страхування", text: "Як обрати медичну касу..." }
 };
 
-// --- ІНІЦІАЛІЗАЦІЯ ---
+// --- ІНІЦІАЛІЗАЦІЯ ФАЙЛІВ ---
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 if (!fs.existsSync(NEWS_FILE)) fs.writeFileSync(NEWS_FILE, "[]", "utf-8");
 if (!fs.existsSync(LOG_FILE)) fs.writeFileSync(LOG_FILE, "", "utf-8");
@@ -53,72 +53,71 @@ app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors());
 app.use(express.json());
 
-// --- РОЗУМНЕ ЛОГУВАННЯ (АНТИ-СПАМ) ---
-let lastErrorTime = 0;
-let lastErrorMessage = "";
-const origError = console.error;
+// --- MULTER (Завантаження фото) ---
+const storage = multer.diskStorage({
+  destination: (_, __, cb) => cb(null, UPLOADS_DIR),
+  filename: (_, file, cb) => cb(null, `img_${Date.now()}${path.extname(file.originalname).toLowerCase()}`)
+});
+const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
+
+// --- УТИЛІТИ ---
+const safeRead = (f, fb) => { try { return JSON.parse(fs.readFileSync(f, "utf-8")); } catch { return fb; } };
+const safeWrite = (f, d) => fs.writeFile(f, JSON.stringify(d, null, 2), "utf-8", () => {});
+const getIP = (req) => req.headers["x-forwarded-for"]?.split(",")[0].trim() || req.socket.remoteAddress;
+
+// --- РОЗУМНА СИСТЕМА ЛОГУВАННЯ ---
+let lastTelegram = {};
+let logBuffer = [];
+
+const flushLogs = () => {
+  if (logBuffer.length === 0) return;
+  const data = logBuffer.join("");
+  logBuffer = [];
+  fs.appendFile(LOG_FILE, data, "utf-8", () => {});
+};
+setInterval(flushLogs, 5000); // Записуємо на диск кожні 5 секунд
+
+const normalizeError = (arg) => {
+  if (arg instanceof Error) return `${arg.message}\n${arg.stack}`;
+  if (typeof arg === "object") return JSON.stringify(arg, null, 2);
+  return String(arg);
+};
 
 const writeLog = async (msg, type = "INFO") => {
   const time = new Date().toLocaleString("uk-UA", { timeZone: "Europe/Berlin" });
   const logStr = `[${time}] [${type}] ${msg}\n`;
-  
-  // Виводимо в консоль Render
+
+  logBuffer.push(logStr);
   console.log(logStr.trim());
-  
-  // Асинхронний запис у файл (щоб не гальмувати сервер)
-  fs.appendFile(LOG_FILE, logStr, (err) => {
-    if (err) origError("CRITICAL: File log failed", err);
+
+  // Авто-очищення логів якщо файл > 5МБ
+  fs.stat(LOG_FILE, (err, stats) => {
+    if (!err && stats.size > 5 * 1024 * 1024) fs.writeFile(LOG_FILE, "[LOG RESET]\n", "utf-8", () => {});
   });
 
-  // Надсилаємо в Телеграм тільки важливе
-  if (["ALERT", "SUCCESS", "MSG", "ERROR"].includes(type)) {
+  // Надсилаємо в ТГ тільки критичне і не частіше ніж раз на хвилину для одного типу
+  if (["ERROR", "ALERT", "SUCCESS", "MSG"].includes(type)) {
     const now = Date.now();
-    // Якщо помилка та сама і пройшло менше 5 хвилин - ігноруємо (захист від флуду)
-    if (type === "ERROR" && msg === lastErrorMessage && (now - lastErrorTime) < 300000) return;
-    
-    if (type === "ERROR") {
-      lastErrorTime = now;
-      lastErrorMessage = msg;
+    if (!lastTelegram[type] || now - lastTelegram[type] > 60000) {
+      lastTelegram[type] = now;
+      axios.post(
+        `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,
+        { chat_id: CHAT_ID, text: `<b>ПОРТАЛ LIVE [${type}]:</b>\n${msg.substring(0, 3500)}`, parse_mode: "HTML" },
+        { timeout: 5000 }
+      ).catch(() => {});
     }
-
-    axios.post(
-      `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,
-      { chat_id: CHAT_ID, text: `<b>ПОРТАЛ LIVE [${type}]:</b>\n${msg.substring(0, 3500)}`, parse_mode: "HTML" },
-      { timeout: 5000 }
-    ).catch(() => {});
   }
 };
 
-// Перехоплення всіх консольних помилок (правильна обробка Error Objects)
+// --- GLOBAL ERROR HOOKS ---
+process.on("uncaughtException", (err) => writeLog(`❌ Uncaught: ${normalizeError(err)}`, "ERROR"));
+process.on("unhandledRejection", (reason) => writeLog(`⚠️ Rejection: ${normalizeError(reason)}`, "ERROR"));
+
+const origError = console.error;
 console.error = (...args) => {
-  const processedArgs = args.map(arg => {
-    if (arg instanceof Error) return `${arg.message}\n${arg.stack}`;
-    if (typeof arg === "object") return JSON.stringify(arg, null, 2);
-    return String(arg);
-  });
-  const finalMsg = processedArgs.join(" ");
-  writeLog(finalMsg, "ERROR");
+  writeLog(`🛑 Console Error: ${args.map(normalizeError).join(" ")}`, "ERROR");
   origError(...args);
 };
-
-// Глобальні падіння Node.js
-process.on("uncaughtException", (err) => console.error("UNCAUGHT EXCEPTION:", err));
-process.on("unhandledRejection", (reason) => console.error("UNHANDLED REJECTION:", reason));
-
-// --- MULTER ---
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, UPLOADS_DIR),
-  filename: (req, file, cb) => {
-    let ext = path.extname(file.originalname).toLowerCase();
-    cb(null, `img_${Date.now()}${ext}`);
-  }
-});
-const upload = multer({ storage: storage, limits: { fileSize: 5 * 1024 * 1024 } });
-
-// --- УТИЛІТИ ---
-const safeRead = (f, fb) => { try { return JSON.parse(fs.readFileSync(f, "utf-8")); } catch(e) { return fb; } };
-const safeWrite = (f, d) => fs.writeFileSync(f, JSON.stringify(d, null, 2), "utf-8");
-const getIP = (req) => req.headers["x-forwarded-for"]?.split(",")[0].trim() || req.socket.remoteAddress;
 
 // --- ГРАБЕР НОВИН ---
 async function fetchNews() {
@@ -134,7 +133,7 @@ async function fetchNews() {
     try {
       const res = await axios.get(s.u, {
         timeout: 15000,
-        headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0" }
+        headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36" }
       });
 
       const feed = await parser.parseString(res.data);
@@ -186,7 +185,7 @@ app.get("/api/news", (req, res) => {
   res.json(news);
 });
 
-app.get("/api/guide", (req, res) => res.json(safeRead(GUIDE_FILE, defaultGuide)));
+app.get("/api/guide", (_, res) => res.json(safeRead(GUIDE_FILE, defaultGuide)));
 
 app.post("/api/taxi", async (req, res) => {
   const { fax, userName, userContact, message } = req.body;
@@ -194,7 +193,7 @@ app.post("/api/taxi", async (req, res) => {
     await writeLog(`🛡️ БОТ ЗАБЛОКОВАНИЙ (Honeypot). IP: ${getIP(req)}`, "WARN");
     return res.json({ success: true });
   }
-  await writeLog(`📩 НОВЕ ПОВІДОМЛЕННЯ:\n👤 ${userName}\n📞 ${userContact}\n💬 ${message}`, "MSG");
+  await writeLog(`📩 ПОВІДОМЛЕННЯ:\n👤 ${userName}\n📞 ${userContact}\n💬 ${message}`, "MSG");
   res.json({ success: true });
 });
 
@@ -203,7 +202,7 @@ app.post("/api/admin/login", async (req, res) => {
   const sec = safeRead(BLOCKS_FILE, { attempts: {}, blocked: {} });
 
   if (sec.blocked[ip] && Date.now() < sec.blocked[ip])
-    return res.status(403).json({ error: "Ви заблоковані" });
+    return res.status(403).json({ error: "Ви заблоковані на годину" });
 
   if (req.body.pass === ADMIN_PASSWORD) {
     sec.attempts[ip] = 0;
@@ -215,7 +214,7 @@ app.post("/api/admin/login", async (req, res) => {
   sec.attempts[ip] = (sec.attempts[ip] || 0) + 1;
   if (sec.attempts[ip] >= 3) {
     sec.blocked[ip] = Date.now() + 3600000;
-    await writeLog(`🚨 БЛОКУВАННЯ IP ${ip} на 1 годину`, "ALERT");
+    await writeLog(`🚨 БЛОКУВАННЯ IP ${ip} (3 невдалі спроби)`, "ALERT");
   }
   safeWrite(BLOCKS_FILE, sec);
   res.status(401).json({ error: "Невірний пароль" });
@@ -245,19 +244,17 @@ app.post("/api/news/add", upload.single("image"), (req, res) => {
 
 app.get("/api/admin/logs", (req, res) => {
   if (req.query.pass !== ADMIN_PASSWORD) return res.status(401).send();
-  try {
-    res.send(fs.readFileSync(LOG_FILE, "utf-8"));
-  } catch {
-    res.send("Логи порожні");
-  }
+  fs.readFile(LOG_FILE, "utf-8", (err, data) => {
+    res.send(err ? "Логи порожні" : data);
+  });
 });
 
 // --- СТАТИКА ---
 app.use("/assets", express.static(path.join(__dirname, "assets")));
 app.use(express.static(path.join(__dirname, "public")));
-app.get("*", (req, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
+app.get("*", (_, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
 
-// --- ЗАПУСК ---
+// --- СТАРТ ---
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server on port ${PORT}`);
